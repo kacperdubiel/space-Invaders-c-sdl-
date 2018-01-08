@@ -18,14 +18,18 @@ void addPlayerBasicStats(){
 
     player.life = 5;
     player.score = 0;
-    player.stage = 1;
+    player.stage = FIRST_STAGE;
 
     player.damage = 1;
-    player.speed = 6;           //w px/s
-    player.bullet_speed = 5;    //w px/s
+    player.speed = 6;
+    player.bullet_speed = 5;
     player.bullet_amplitude = 35; //w px
     player.attack_speed = 25; //co ile klatek można strzelać
-    player.attCooldown = player.attack_speed; //pierwszy pocisk możliwy w pierwszej klatce
+    player.attCooldown = player.attack_speed;
+    player.freezeCooldown = 3;
+    player.freezeTime = 0;
+    for(int i=0; i<BOX_TYPES; i++)
+        player.timers[i] = 0;
 }
 
 void playerCollisionUpdate(){

@@ -37,6 +37,10 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="boxes.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="boxes.h" />
 		<Unit filename="bullet.c">
 			<Option compilerVar="CC" />
 		</Unit>

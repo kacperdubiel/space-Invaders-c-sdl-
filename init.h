@@ -6,12 +6,12 @@
 #define WINDOW_NAME   "Space Invaders"
 #define WINDOW_WIDTH  (960)
 #define WINDOW_HEIGHT (720)
-#define FPS           (60)
+#define FPS           (50)
 
-#define FISRT_STAGE 1
-#define DEAD_TIMER 90
+#define FIRST_STAGE 1
+#define DEAD_TIMER 200
 
-extern int unsigned global_timer;
+extern int unsigned frames_counter, current_time, last_time;
 extern int program;
 extern int programStatus;
 extern int selectedOption;
@@ -19,7 +19,7 @@ extern int selectedOption;
 extern int deadTimer;
 extern int gameEnd;
 
-extern char scoreBuffer[70];
+extern char textBuffer[70];
 
 extern SDL_Window* win;
 extern SDL_Renderer* rend;

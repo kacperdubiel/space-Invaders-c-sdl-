@@ -4,7 +4,9 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-int unsigned global_timer = 0;
+int unsigned frames_counter = 0;
+int unsigned current_time = 0;
+int unsigned last_time = 0;
 int program = 1;
 int programStatus = 1;
 int selectedOption = 1;
@@ -12,7 +14,7 @@ int selectedOption = 1;
 int deadTimer = DEAD_TIMER;
 int gameEnd = 0;
 
-char scoreBuffer[70];
+char textBuffer[70];
 
 SDL_Window* win;
 SDL_Renderer* rend;
