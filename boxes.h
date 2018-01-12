@@ -1,11 +1,11 @@
 #ifndef BOXES_H_INCLUDED
 #define BOXES_H_INCLUDED
 
+#define BOX_TYPES 5
+#define MAX_BOXES 50
+
 #include <SDL.h>
 #include "textures.h"
-
-#define MAX_BOXES 50
-#define BOX_TYPES 5
 
 typedef struct _Box{
     float x, y;
@@ -18,8 +18,6 @@ typedef struct _BoxType{
     int amp;
     int attSpeed;
     int dmg;
-    //int shield;
-    //int bomb;
     float dropChance;
     SDL_Texture* texture;
     SDL_Texture* offTexture;

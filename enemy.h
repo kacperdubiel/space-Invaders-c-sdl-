@@ -1,13 +1,12 @@
 #ifndef ENEMIES_H_INCLUDED
 #define ENEMIES_H_INCLUDED
 
-#include <SDL.h>
-
 #define MAX_ENEMIES 100
 #define ENEMY_TYPES 6+1 //1 - template, nie używany
 #define LAST_STAGE  7
 #define STARTING_COOLDOWN 30
 
+#include <SDL.h>
 #include "textures.h"
 
 typedef struct _Enemy{

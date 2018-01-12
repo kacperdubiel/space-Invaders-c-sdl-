@@ -10,35 +10,27 @@
 
 #include "init.h"
 #include "textures.h"
-#include "player.h"
 #include "enemy.h"
 #include "bullet.h"
 #include "boxes.h"
+#include "player.h"
+#include "ranking.h"
 
 void onExit();
 void renderGame();
 void renderMenu();
 void renderInstruction();
 void renderPause();
-
-//TO DO
-void renderWin();
-void renderLose();
+void renderRanking();
+void renderEnd();
 
 int main( int argc, char* args[] ) {
     //inicjalizacja SDL, TTF, stworzenie okna i renderu
     if(init()!=0) return 1;
 
-    //czcionki
-    font72 = TTF_OpenFont("font.ttf", 72); font_outline72 = TTF_OpenFont("font.ttf", 72);
-    font60 = TTF_OpenFont("font.ttf", 60); font_outline60 = TTF_OpenFont("font.ttf", 60);
-    font45 = TTF_OpenFont("font.ttf", 45); font_outline45 = TTF_OpenFont("font.ttf", 45);
-    font30 = TTF_OpenFont("font.ttf", 30); font_outline30 = TTF_OpenFont("font.ttf", 30);
-    font25 = TTF_OpenFont("font.ttf", 25); font_outline25 = TTF_OpenFont("font.ttf", 25);
-    font20 = TTF_OpenFont("font.ttf", 20); font_outline20 = TTF_OpenFont("font.ttf", 20);
-
     //zainicjowanie animacji
     allAnimationInit();
+    createAnimationTextures();
     //stworzenie potrzebnych tekstur
     createTexturesAndRects();
     //zainicjowanie statystyk wrogów
@@ -47,11 +39,21 @@ int main( int argc, char* args[] ) {
     allBulletsInit();
     //zainicjowanie skrzynek
     allBoxesInit();
+    //wczytanie rankingu
+    readRanking();
     //losowanie
     srand(time(NULL));
 
     // <<-- GŁÓWNA PĘTLA PROGRAMU -->>
     while(program){
+        //wyczyszczenie okna
+        SDL_RenderClear(rend);
+
+        SDL_RenderCopy(rend, bgTexture, NULL, &bgRect);
+        bgRect.y+=bg_scrolling_speed;
+        if(bgRect.y>=0)
+            bgRect.y=WINDOW_HEIGHT-bgRect.h;
+
         switch(programStatus){
         case 1:
             renderMenu();
@@ -66,12 +68,18 @@ int main( int argc, char* args[] ) {
             renderPause();
             break;
         case 5:
+            renderRanking();
+            break;
+        case 6:
+            renderEnd(0);
+            break;
+        case 7:
+            renderEnd(1);
             break;
         }
         //główne renderowanie
         SDL_RenderPresent(rend);
 
-        //printf("%d\n",frames_counter%60);
         //licznik klatek
         frames_counter++;
         //klatki na sekunde
@@ -89,14 +97,14 @@ void onExit(){
     for(int i=0;i<BULLET_TYPES;i++)
         SDL_DestroyTexture(bulletTypes[i].texture);
     SDL_DestroyTexture(scoreTextTexture);
-    SDL_DestroyTexture(startTextTexture);
-    SDL_DestroyTexture(helpTextTexture);
-    SDL_DestroyTexture(endTextTexture);
-    SDL_DestroyTexture(pauseTextTexture);
-    SDL_DestroyTexture(yesTextTexture);
-    SDL_DestroyTexture(noTextTexture);
+    SDL_DestroyTexture(menuTextTextures[0].texture);
+    SDL_DestroyTexture(menuTextTextures[1].texture);
+    SDL_DestroyTexture(menuTextTextures[3].texture);
+    SDL_DestroyTexture(pauseTextTextures[0].texture);
+    SDL_DestroyTexture(pauseTextTextures[1].texture);
+    SDL_DestroyTexture(pauseTextTextures[2].texture);
     SDL_DestroyTexture(animationTexture);
-    SDL_DestroyTexture(iconFreezeTexture);
+    SDL_DestroyTexture(iconTextures[1].selected_texture);
     SDL_DestroyTexture(bgTexture);
     SDL_DestroyTexture(hudTexture);
     SDL_DestroyTexture(heartTexture);
@@ -120,23 +128,22 @@ void renderMenu(){
                 break;
             case SDL_SCANCODE_LEFT:
                 selectedOption--;
-                if(selectedOption<1) selectedOption=3;
+                if(selectedOption<1) selectedOption=4;
                 break;
             case SDL_SCANCODE_RIGHT:
                 selectedOption++;
-                if(selectedOption>3) selectedOption=1;
+                if(selectedOption>4) selectedOption=1;
                 break;
             case SDL_SCANCODE_UP:
                 selectedOption--;
-                if(selectedOption<1) selectedOption=3;
+                if(selectedOption<1) selectedOption=4;
                 break;
             case SDL_SCANCODE_DOWN:
                 selectedOption++;
-                if(selectedOption>3) selectedOption=1;
+                if(selectedOption>4) selectedOption=1;
                 break;
             case SDL_SCANCODE_SPACE:
             case SDL_SCANCODE_RETURN:
-            case SDL_SCANCODE_Q:
                 switch(selectedOption){
                 case 1:
                     programStatus = 2;
@@ -147,12 +154,17 @@ void renderMenu(){
                     addPlayerBasicStats();
                     bg_scrolling_speed = 2;
                     cleanMap();
-                    selectedOption=1;
+                    selectedOption = 1;
                     break;
                 case 2:
                     programStatus = 3;
                     break;
                 case 3:
+                    createRankingTextures();
+                    selectedOption = 1;
+                    programStatus = 5;
+                    break;
+                case 4:
                     program = 0;
                     break;
                 }
@@ -163,49 +175,58 @@ void renderMenu(){
         }
     }
 
-    //wyczyszczenie okna
-    SDL_RenderClear(rend);
-
-    SDL_RenderCopy(rend, bgTexture, NULL, &bgRect);
-    bgRect.y+=bg_scrolling_speed;
-    if(bgRect.y>=0)
-        bgRect.y=WINDOW_HEIGHT-bgRect.h;
 
     //rozpocznij
-    if(startTextRect.x < WINDOW_WIDTH/2-startTextRect.w/2)
-        startTextRect.x+=13;
+    if(menuTextTextures[0].rect.x < WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2)
+        menuTextTextures[0].rect.x+=13;
     else
-        startTextRect.x = WINDOW_WIDTH/2-startTextRect.w/2;
+        menuTextTextures[0].rect.x = WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2;
 
-    if(selectedOption==1)
-        SDL_RenderCopy(rend, selectedStartTextTexture, NULL, &startTextRect);
+    if(selectedOption == 1)
+        SDL_RenderCopy(rend, menuTextTextures[0].selected_texture, NULL, &menuTextTextures[0].rect);
     else
-        SDL_RenderCopy(rend, startTextTexture, NULL, &startTextRect);
+        SDL_RenderCopy(rend, menuTextTextures[0].texture, NULL, &menuTextTextures[0].rect);
 
     //instrukcja
-    if(helpTextRect.x > WINDOW_WIDTH/2-helpTextRect.w/2)
-        helpTextRect.x-=13;
+    if(menuTextTextures[1].rect.x > WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2)
+        menuTextTextures[1].rect.x-=13;
     else
-        helpTextRect.x = WINDOW_WIDTH/2-helpTextRect.w/2;
+        menuTextTextures[1].rect.x = WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2;
 
-    if(selectedOption==2)
-        SDL_RenderCopy(rend, selectedHelpTextTexture, NULL, &helpTextRect);
+    if(selectedOption == 2)
+        SDL_RenderCopy(rend, menuTextTextures[1].selected_texture, NULL, &menuTextTextures[1].rect);
     else
-    SDL_RenderCopy(rend, helpTextTexture, NULL, &helpTextRect);
+        SDL_RenderCopy(rend, menuTextTextures[1].texture, NULL, &menuTextTextures[1].rect);
+
+    //ranking
+    if(menuTextTextures[2].rect.x < WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2)
+        menuTextTextures[2].rect.x+=13;
+    else
+        menuTextTextures[2].rect.x = WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2;
+
+    if(selectedOption == 3)
+        SDL_RenderCopy(rend, menuTextTextures[2].selected_texture, NULL, &menuTextTextures[2].rect);
+    else
+        SDL_RenderCopy(rend, menuTextTextures[2].texture, NULL, &menuTextTextures[2].rect);
 
     //wyjście
-    if(endTextRect.x < WINDOW_WIDTH/2-endTextRect.w/2)
-        endTextRect.x+=13;
+    if(menuTextTextures[3].rect.x > WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2)
+        menuTextTextures[3].rect.x-=13;
     else
-        endTextRect.x = WINDOW_WIDTH/2-endTextRect.w/2;
+        menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
 
-    if(selectedOption==3)
-        SDL_RenderCopy(rend, selectedEndTextTexture, NULL, &endTextRect);
+    if(selectedOption == 4)
+        SDL_RenderCopy(rend, menuTextTextures[3].selected_texture, NULL, &menuTextTextures[3].rect);
     else
-    SDL_RenderCopy(rend, endTextTexture, NULL, &endTextRect);
+        SDL_RenderCopy(rend, menuTextTextures[3].texture, NULL, &menuTextTextures[3].rect);
 }
 
 void renderGame(){
+    //flagi
+    int scoreFlag = 0;
+    int timerFlag = 0;
+    int bombsFlag = 0;
+
     //zdarzenia
     SDL_Event event;
     while(SDL_PollEvent(&event)){
@@ -236,6 +257,7 @@ void renderGame(){
                 break;
             case SDL_SCANCODE_W:
                 if(player.freezeCooldown == 0){
+                    timerFlag = 1;
                     addAnimation(player.x+playerRect.w/2, player.y+playerRect.h/2, 0, 2);
                     player.freezeCooldown = FREEZE_COOLDOWN;
                     player.freezeTime = FREEZE_DURATION;
@@ -255,6 +277,14 @@ void renderGame(){
                             }
                         }
                     }
+                }
+                break;
+            case SDL_SCANCODE_E:
+                if(player.bombs>0 && !player.bombsCooldown){
+                    player.bombs--;
+                    bombsFlag = 1;
+                    addBullet(player.x+playerRect.w/2-bulletTypes[7].rect.w/2,player.y-bulletTypes[7].rect.h+30,7);
+                    player.bombsCooldown = BOMBS_COOLDOWN;
                 }
                 break;
             default:
@@ -284,8 +314,6 @@ void renderGame(){
             }
         }
     }
-    //wyczyszczenie okna
-    SDL_RenderClear(rend);
 
     //koniec gry;
     if(player.life<=0){
@@ -295,16 +323,28 @@ void renderGame(){
         player.attCooldown = 0;
         player.freezeCooldown = -1;
     }
+
     if(gameEnd){
         deadTimer--;
         if(deadTimer<=0){
-            programStatus=1;
-            selectedOption=1;
+            if(player.life>5)
+                player.score += player.score*(player.life-5)*0.05;
+
+            createEndTextures();
+            if(player.score>ranking[RANKING_TOP-1].score){
+                programStatus = 7;
+                selectedOption = 1;
+            }else{
+                programStatus = 6;
+                selectedOption = 1;
+            }
         }
     }
 
     //ładowanie broni gracza i wrogów
     player.attCooldown++;
+    if(player.bombsCooldown>0)
+        player.bombsCooldown--;
     for(int i=0;i<MAX_ENEMIES;i++)
         if(enemies[i] && enemies[i]->cooldown>0 && !enemies[i]->freeze) enemies[i]->cooldown--;
 
@@ -347,6 +387,7 @@ void renderGame(){
         }else
             player.bullet_speed = 5;
 
+        timerFlag = 1;
         printf("FPS: %d\n",frames_counter);
         frames_counter=0;
         last_time = current_time;
@@ -373,6 +414,8 @@ void renderGame(){
         player.y-=3;
         player.x = (WINDOW_WIDTH - playerRect.w) / 2;
         player.attCooldown = 0;
+        scoreFlag = 1;
+        bombsFlag = 1;
     }
 
     //atak gracza
@@ -384,13 +427,6 @@ void renderGame(){
     //aktualizacja pozycji gracza
     playerRect.x = player.x;
     playerRect.y = player.y;
-
-    //rysowanie poszczególnych elementów
-    //tło
-    SDL_RenderCopy(rend, bgTexture, NULL, &bgRect);
-    bgRect.y+=bg_scrolling_speed;
-    if(bgRect.y>=0)
-        bgRect.y=WINDOW_HEIGHT-bgRect.h;
 
     //skrzynki
     for(int i=0; i<MAX_BOXES; i++){
@@ -415,6 +451,7 @@ void renderGame(){
                     if(player.life < MAX_LIFE) player.life++;
                 }else{
                     player.timers[type] = BONUS_DURATION;
+                    timerFlag = 1;
                 }
                 removeBox(i);
             }
@@ -456,6 +493,7 @@ void renderGame(){
                         addAnimation(bullets[i]->x+bulletTypes[bType].rect.w/2, bullets[i]->y+bulletTypes[bType].rect.h/2, rand()%360, 0);
                         removeBullet(i);
                         if(enemies[j]->life<=0){
+                            scoreFlag = 1;
                             player.score += enemyTypes[type].score;
                             addAnimation(enemies[j]->x+enemyTypes[type].rect.w/2, enemies[j]->y+enemyTypes[type].rect.h/2, rand()%360, 0);
 
@@ -554,21 +592,21 @@ void renderGame(){
         }
     }
 
-    //ruch pocisków wrogów
+    //ruch pocisków wrogów i bomby gracza
     for(int i=0;i<MAX_BULLETS;i++){
-        if(bullets[i] && bullets[i]->bulletType > 0){
+        if(bullets[i] && bullets[i]->bulletType != 0){
             int bType = bullets[i]->bulletType;
 
             bulletTypes[bType].rect.x = bullets[i]->x;
             bulletTypes[bType].rect.y = bullets[i]->y;
             SDL_RenderCopyEx(rend,bulletTypes[bType].texture,NULL,&bulletTypes[bType].rect,bullets[i]->bullet_angle,NULL,SDL_FLIP_NONE);
 
-            if(!bullets[i]->freeze)
+            if(!bullets[i]->freeze || bType == 7)
                 bullets[i]->bullet_angle += bulletTypes[bType].spin_speed;
             if(bullets[i]->bullet_angle>=360){
                 bullets[i]->bullet_angle-=360;
             }
-            if(!bullets[i]->freeze){
+            if(!bullets[i]->freeze || bType == 7){
                 bullets[i]->x = bullets[i]->x_start - sin(bullets[i]->y_helper)*bullets[i]->bullet_amplitude;
                 bullets[i]->y_helper += SINUS_ACCURACY;
                 bullets[i]->y += bullets[i]->bullet_speed;
@@ -580,16 +618,49 @@ void renderGame(){
 
             collisionUpdate();
             int n = bulletTypes[bType].collisionBoxesCount;
-            int m = player.collisionBoxesCount;
+            if(bType != 7){
+                int m = player.collisionBoxesCount;
 
-            if(collisionCheck(n, bullets[i]->collisionBoxes, m, player.collisionBoxes)){
-                player.life-=bulletTypes[bType].bullet_damage;
-                addAnimation(bullets[i]->x+bulletTypes[bType].rect.w/2, bullets[i]->y+bulletTypes[bType].rect.h/2, rand()%360, 0);
-                if(player.life==0)
-                    addAnimation(player.x+playerRect.w/2, player.y+playerRect.h/2, 0, 3);
-                addAnimation(heartRect.x+heartRect.w/2, heartRect.y+heartRect.h/2, rand()%360, 1);
-                removeBullet(i);
-                break;
+                if(collisionCheck(n, bullets[i]->collisionBoxes, m, player.collisionBoxes)){
+                    player.life-=bulletTypes[bType].bullet_damage;
+                    addAnimation(bullets[i]->x+bulletTypes[bType].rect.w/2, bullets[i]->y+bulletTypes[bType].rect.h/2, rand()%360, 0);
+                    if(player.life==0)
+                        addAnimation(player.x+playerRect.w/2, player.y+playerRect.h/2, 0, 3);
+                    addAnimation(heartRect.x+heartRect.w/2, heartRect.y+heartRect.h/2, rand()%360, 1);
+                    removeBullet(i);
+                    break;
+                }
+            }else if(bType == 7){
+                for(int j=0; j<MAX_ENEMIES; j++){
+                    if(enemies[j]){
+                        int eType = enemies[j]->enemyType;
+                        int m = enemyTypes[eType].collisionBoxesCount;
+
+                        if(collisionCheck(n, bullets[i]->collisionBoxes, m, enemies[j]->collisionBoxes)){
+                            for(int k = 0; k<MAX_ENEMIES;k++){
+                                if(enemies[k]){
+                                    int eType2 = enemies[k]->enemyType;
+                                    enemies[k]->life-=bullets[i]->bullet_damage;
+                                    addAnimation(enemies[k]->x+(enemyTypes[eType2].rect.w/2)*(0.4*(rand()%5-2)+1), enemies[k]->y+(enemyTypes[eType2].rect.h/2)*(0.4*(rand()%5-2)+1), rand()%360, 0);
+                                    if(enemies[k]->life<=0){
+                                        scoreFlag = 1;
+                                        player.score += enemyTypes[eType2].score;
+
+                                        int box = rand()%BOX_TYPES;
+                                        int random = rand()%1000;
+                                        if(random*1.5 < boxTypes[box].dropChance*enemyTypes[eType2].dropChanceMultiplier){
+                                            addBox(enemies[k]->x+enemyTypes[eType2].rect.w/2, enemies[k]->y+enemyTypes[eType2].rect.h/2, box);
+                                        }
+                                        removeEnemy(k);
+                                    }
+                                }
+                            }
+                            addAnimation(bulletTypes[bType].rect.x+bulletTypes[bType].rect.w/2,bulletTypes[bType].rect.y, 0, 3);
+                            removeBullet(i);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -608,30 +679,67 @@ void renderGame(){
     SDL_RenderCopy(rend, hudTexture, NULL, &hudRect1);
 
     // <<-- IKONY -->>
+    //atak
+    iconTextures[0].rect.x = WINDOW_WIDTH-3*iconTextures[0].rect.w-3*10;
+    iconTextures[0].rect.y = WINDOW_HEIGHT-iconTextures[0].rect.h-5;
+    if(player.attCooldown>=player.attack_speed)
+        SDL_RenderCopy(rend, iconTextures[0].selected_texture, NULL, &iconTextures[0].rect);
+    else
+        SDL_RenderCopy(rend, iconTextures[0].texture, NULL, &iconTextures[0].rect);
+
+    hotkeysTextTextures[0].rect.x = iconTextures[0].rect.x+iconTextures[0].rect.w/2-hotkeysTextTextures[0].rect.w/2;
+    hotkeysTextTextures[0].rect.y = iconTextures[0].rect.y+iconTextures[0].rect.h-hotkeysTextTextures[0].rect.h;
+    SDL_RenderCopy(rend, hotkeysTextTextures[0].texture, NULL, &hotkeysTextTextures[0].rect);
+
     //zamrażanie
-    iconFreezeRect.x = WINDOW_WIDTH-iconFreezeRect.w-10;
-    iconFreezeRect.y = WINDOW_HEIGHT-iconFreezeRect.h-5;
+    iconTextures[1].rect.x = iconTextures[0].rect.x+iconTextures[0].rect.w+10;
+    iconTextures[1].rect.y = iconTextures[0].rect.y;
     if(player.freezeCooldown == 0){
-        SDL_RenderCopy(rend, iconFreezeTexture, NULL, &iconFreezeRect);
-        freezeHtkRect.x = iconFreezeRect.x+iconFreezeRect.w/2-freezeHtkRect.w/2;
-        freezeHtkRect.y = iconFreezeRect.y+iconFreezeRect.h-freezeHtkRect.h;
-        SDL_RenderCopy(rend, freezeHtkTexture, NULL, &freezeHtkRect);
+        SDL_RenderCopy(rend, iconTextures[1].selected_texture, NULL, &iconTextures[1].rect);
+        hotkeysTextTextures[1].rect.x = iconTextures[1].rect.x+iconTextures[1].rect.w/2-hotkeysTextTextures[1].rect.w/2;
+        hotkeysTextTextures[1].rect.y = iconTextures[1].rect.y+iconTextures[1].rect.h-hotkeysTextTextures[1].rect.h;
+        SDL_RenderCopy(rend, hotkeysTextTextures[1].texture, NULL, &hotkeysTextTextures[1].rect);
     }else if(player.freezeCooldown == -1){
-        SDL_RenderCopy(rend, iconFreezeCdTexture, NULL, &iconFreezeRect);
+        SDL_RenderCopy(rend, iconTextures[1].texture, NULL, &iconTextures[1].rect);
     }else{
-        SDL_RenderCopy(rend, iconFreezeCdTexture, NULL, &iconFreezeRect);
+        SDL_RenderCopy(rend, iconTextures[1].texture, NULL, &iconTextures[1].rect);
 
-        sprintf(textBuffer, "%d", player.freezeCooldown);
+        if(timerFlag){
+            SDL_DestroyTexture(spellsCdTextures[1].texture);
+            sprintf(textBuffer, "%d", player.freezeCooldown);
 
-        freezeCdTexture = createTextTexture(font45, textBuffer, colorWhite, 3, font_outline45, colorBlack);
-        SDL_QueryTexture(freezeCdTexture, NULL, NULL, &freezeCdRect.w, &freezeCdRect.h);
+            spellsCdTextures[1].texture = createTextTexture(font30, textBuffer, colorWhite, 2, font_outline30, colorBlack);
+            SDL_QueryTexture(spellsCdTextures[1].texture, NULL, NULL, &spellsCdTextures[1].rect.w, &spellsCdTextures[1].rect.h);
 
-        freezeCdRect.x = iconFreezeRect.x+iconFreezeRect.w/2-freezeCdRect.w/2;
-        freezeCdRect.y = iconFreezeRect.y+iconFreezeRect.h/2-freezeCdRect.h/2;
-        SDL_RenderCopy(rend, freezeCdTexture, NULL, &freezeCdRect);
-
-        SDL_DestroyTexture(freezeCdTexture);
+            spellsCdTextures[1].rect.x = iconTextures[1].rect.x+iconTextures[1].rect.w/2-spellsCdTextures[1].rect.w/2;
+            spellsCdTextures[1].rect.y = iconTextures[1].rect.y+iconTextures[1].rect.h/2-spellsCdTextures[1].rect.h/2;
+        }
+        SDL_RenderCopy(rend, spellsCdTextures[1].texture, NULL, &spellsCdTextures[1].rect);
     }
+
+    //bomby
+    iconTextures[2].rect.x = iconTextures[1].rect.x+iconTextures[1].rect.w+10;
+    iconTextures[2].rect.y = iconTextures[1].rect.y;
+    if(player.bombs>0)
+        SDL_RenderCopy(rend, iconTextures[2].selected_texture, NULL, &iconTextures[2].rect);
+    else
+        SDL_RenderCopy(rend, iconTextures[2].texture, NULL, &iconTextures[2].rect);
+
+    hotkeysTextTextures[2].rect.x = iconTextures[2].rect.x+iconTextures[2].rect.w/2-hotkeysTextTextures[2].rect.w/2;
+    hotkeysTextTextures[2].rect.y = iconTextures[2].rect.y+iconTextures[2].rect.h-hotkeysTextTextures[2].rect.h;
+    SDL_RenderCopy(rend, hotkeysTextTextures[2].texture, NULL, &hotkeysTextTextures[2].rect);
+
+    if(bombsFlag){
+        SDL_DestroyTexture(spellsCdTextures[2].texture);
+        sprintf(textBuffer, "%d", player.bombs);
+
+        spellsCdTextures[2].texture = createTextTexture(font15, textBuffer, colorWhite, 2, font_outline15, colorBlack);
+        SDL_QueryTexture(spellsCdTextures[2].texture, NULL, NULL, &spellsCdTextures[2].rect.w, &spellsCdTextures[2].rect.h);
+
+        spellsCdTextures[2].rect.x = WINDOW_WIDTH-spellsCdTextures[2].rect.w-5;
+        spellsCdTextures[2].rect.y = WINDOW_HEIGHT-spellsCdTextures[2].rect.h-3;
+    }
+    SDL_RenderCopy(rend, spellsCdTextures[2].texture, NULL, &spellsCdTextures[2].rect);
 
     //serca
     heartRect.x = heartX;
@@ -677,14 +785,17 @@ void renderGame(){
         if(player.timers[i]>0){
             SDL_RenderCopy(rend, boxTypes[i].texture, NULL, &boxRect);
 
-            sprintf(textBuffer, "%d", player.timers[i]);
+            if(timerFlag){
+                SDL_DestroyTexture(cooldownsTextTextures[i].texture);
+                sprintf(textBuffer, "%d", player.timers[i]);
 
-            textTexture = createTextTexture(font20, textBuffer, colorWhite, 1, font_outline20, colorBlack);
-            SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-            textRect.x = boxRect.x+boxRect.w/2;
-            textRect.y = boxRect.y+boxRect.h/2-3;
-            SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-            SDL_DestroyTexture(textTexture);
+                cooldownsTextTextures[i].texture = createTextTexture(font20, textBuffer, colorWhite, 1, font_outline20, colorBlack);
+                SDL_QueryTexture(cooldownsTextTextures[i].texture, NULL, NULL, &cooldownsTextTextures[i].rect.w, &cooldownsTextTextures[i].rect.h);
+                cooldownsTextTextures[i].rect.x = boxRect.x+boxRect.w/2;
+                cooldownsTextTextures[i].rect.y = boxRect.y+boxRect.h/2-3;
+            }
+            SDL_RenderCopy(rend, cooldownsTextTextures[i].texture, NULL, &cooldownsTextTextures[i].rect);
+
         }else{
             SDL_RenderCopy(rend, boxTypes[i].offTexture, NULL, &boxRect);
         }
@@ -692,14 +803,15 @@ void renderGame(){
     }
 
     //punkty (napis)
-    sprintf(textBuffer, "Punkty: %d", player.score);
-
-    scoreTextTexture = createTextTexture(font30, textBuffer, colorGold, 1, font_outline30, colorBlack);
-    SDL_QueryTexture(scoreTextTexture, NULL, NULL, &scoreTextRect.w, &scoreTextRect.h);
-    scoreTextRect.x = WINDOW_WIDTH-scoreTextRect.w-10;
-    scoreTextRect.y = 0;
+    if(scoreFlag){
+        SDL_DestroyTexture(scoreTextTexture);
+        sprintf(textBuffer, "Punkty: %d", player.score);
+        scoreTextTexture = createTextTexture(font30, textBuffer, colorGold, 1, font_outline30, colorBlack);
+        SDL_QueryTexture(scoreTextTexture, NULL, NULL, &scoreTextRect.w, &scoreTextRect.h);
+        scoreTextRect.x = WINDOW_WIDTH-scoreTextRect.w-10;
+        scoreTextRect.y = 0;
+    }
     SDL_RenderCopy(rend, scoreTextTexture, NULL, &scoreTextRect);
-    SDL_DestroyTexture(scoreTextTexture);
 
 }
 
@@ -714,25 +826,17 @@ void renderInstruction(){
             case SDL_SCANCODE_ESCAPE:
             case SDL_SCANCODE_SPACE:
             case SDL_SCANCODE_RETURN:
-            case SDL_SCANCODE_Q:
-                startTextRect.x = WINDOW_WIDTH/2-startTextRect.w/2;
-                helpTextRect.x = WINDOW_WIDTH/2-helpTextRect.w/2;
-                endTextRect.x = WINDOW_WIDTH/2-endTextRect.w/2;
-                programStatus=1;
+                menuTextTextures[0].rect.x = WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2;
+                menuTextTextures[1].rect.x = WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2;
+                menuTextTextures[2].rect.x = WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2;
+                menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
+                programStatus = 1;
                 break;
             default:
                 break;
             }
         }
     }
-    //wyczyszczenie okna
-    SDL_RenderClear(rend);
-
-    //tło
-    SDL_RenderCopy(rend, bgTexture, NULL, &bgRect);
-    bgRect.y+=bg_scrolling_speed;
-    if(bgRect.y>=0)
-        bgRect.y=WINDOW_HEIGHT-bgRect.h;
 
     //strzałki
     arrowsRect.x = 30;
@@ -744,7 +848,6 @@ void renderInstruction(){
     textRect.x = arrowsRect.x+arrowsRect.w+20;
     textRect.y = arrowsRect.y+arrowsRect.h/2-textRect.h/2;
     SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
 
     //Q
     SDL_QueryTexture(qTexture, NULL, NULL, &keyRect.w, &keyRect.h);
@@ -874,18 +977,19 @@ void renderPause(){
                 break;
             case SDL_SCANCODE_SPACE:
             case SDL_SCANCODE_RETURN:
-            case SDL_SCANCODE_Q:
                 switch(selectedOption){
                 case 1:
                     programStatus=2;
                     selectedOption=1;
                     break;
                 case 2:
-                    startTextRect.x = WINDOW_WIDTH/2-startTextRect.w/2;
-                    helpTextRect.x = WINDOW_WIDTH/2-helpTextRect.w/2;
-                    endTextRect.x = WINDOW_WIDTH/2-endTextRect.w/2;
+                    bg_scrolling_speed = 0.5;
                     programStatus=1;
                     selectedOption=1;
+                    menuTextTextures[0].rect.x = WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2;
+                    menuTextTextures[1].rect.x = WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2;
+                    menuTextTextures[2].rect.x = WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2;
+                    menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
                     break;
                 }
                 break;
@@ -894,35 +998,261 @@ void renderPause(){
             }
         }
     }
-    //wyczyszczenie okna
-    SDL_RenderClear(rend);
-
-    //tło
-    SDL_RenderCopy(rend, bgTexture, NULL, &bgRect);
-    bgRect.y+=bg_scrolling_speed;
-    if(bgRect.y>=0)
-        bgRect.y=WINDOW_HEIGHT-bgRect.h;
 
     //pauza
-    SDL_RenderCopy(rend, pauseTextTexture, NULL, &pauseTextRect);
+    SDL_RenderCopy(rend, pauseTextTextures[0].texture, NULL, &pauseTextTextures[0].rect);
 
     //NIE
     if(selectedOption==1)
-        SDL_RenderCopy(rend, selectedNoTextTexture, NULL, &noTextRect);
+        SDL_RenderCopy(rend, pauseTextTextures[2].selected_texture, NULL, &pauseTextTextures[2].rect);
     else
-    SDL_RenderCopy(rend, noTextTexture, NULL, &noTextRect);
+    SDL_RenderCopy(rend, pauseTextTextures[2].texture, NULL, &pauseTextTextures[2].rect);
 
     //TAK
     if(selectedOption==2)
-        SDL_RenderCopy(rend, selectedYesTextTexture, NULL, &yesTextRect);
+        SDL_RenderCopy(rend, pauseTextTextures[1].selected_texture, NULL, &pauseTextTextures[1].rect);
     else
-    SDL_RenderCopy(rend, yesTextTexture, NULL, &yesTextRect);
+    SDL_RenderCopy(rend, pauseTextTextures[1].texture, NULL, &pauseTextTextures[1].rect);
 }
 
-void renderWin(){
-    //TO DO
+void renderRanking(){
+    SDL_Event event;
+    while(SDL_PollEvent(&event)){
+        //zatrzymanie programu
+        if(event.type == SDL_QUIT)
+            program = 0;
+        if(event.type == SDL_KEYDOWN){
+            switch(event.key.keysym.scancode){
+            case SDL_SCANCODE_ESCAPE:
+                programStatus = 1;
+                menuTextTextures[0].rect.x = WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2;
+                menuTextTextures[1].rect.x = WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2;
+                menuTextTextures[2].rect.x = WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2;
+                menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
+                break;
+            case SDL_SCANCODE_LEFT:
+                selectedOption--;
+                if(selectedOption<1) selectedOption=2;
+                break;
+            case SDL_SCANCODE_RIGHT:
+                selectedOption++;
+                if(selectedOption>2) selectedOption=1;
+                break;
+            case SDL_SCANCODE_UP:
+                selectedOption--;
+                if(selectedOption<1) selectedOption=2;
+                break;
+            case SDL_SCANCODE_DOWN:
+                selectedOption++;
+                if(selectedOption>2) selectedOption=1;
+                break;
+            case SDL_SCANCODE_SPACE:
+            case SDL_SCANCODE_RETURN:
+                switch(selectedOption){
+                case 1:
+                    menuTextTextures[0].rect.x = WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2;
+                    menuTextTextures[1].rect.x = WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2;
+                    menuTextTextures[2].rect.x = WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2;
+                    menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
+                    for(int i=0; i<4+RANKING_TOP; i++){
+                        SDL_DestroyTexture(rankingTextTextures[i].texture);
+                        SDL_DestroyTexture(rankingTextTextures[i].selected_texture);
+                    }
+                    programStatus = 1;
+                    selectedOption = 3;
+                    break;
+                case 2:
+                    resetRanking();
+                    saveRanking();
+                    for(int i=0; i<4+RANKING_TOP; i++){
+                        SDL_DestroyTexture(rankingTextTextures[i].texture);
+                        SDL_DestroyTexture(rankingTextTextures[i].selected_texture);
+                    }
+                    createRankingTextures();
+                    break;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    //ranking
+    SDL_Rect temp;
+    SDL_QueryTexture(menuTextTextures[2].texture, NULL, NULL, &temp.w, &temp.h);
+    temp.x = WINDOW_WIDTH/2-temp.w/2;
+    temp.y = 50;
+    SDL_RenderCopy(rend, menuTextTextures[2].texture, NULL, &temp);
+
+    //nazwa gracza
+    rankingTextTextures[0].rect.x = WINDOW_WIDTH/4-rankingTextTextures[0].rect.w/2;
+    rankingTextTextures[0].rect.y = temp.y+temp.h+25;
+    SDL_RenderCopy(rend, rankingTextTextures[0].texture, NULL, &rankingTextTextures[0].rect);
+
+    //punkty
+    rankingTextTextures[1].rect.x = 3*(WINDOW_WIDTH/4)-rankingTextTextures[1].rect.w/2;
+    rankingTextTextures[1].rect.y = rankingTextTextures[0].rect.y;
+    SDL_RenderCopy(rend, rankingTextTextures[1].texture, NULL, &rankingTextTextures[1].rect);
+
+    //lista graczy
+    rankingTextTextures[4].rect.x = rankingTextTextures[0].rect.x+30;
+    rankingTextTextures[4].rect.y = rankingTextTextures[0].rect.y+75;
+    temp.x = rankingTextTextures[1].rect.x+rankingTextTextures[1].rect.w/2-10;
+    for(int i=0; i<RANKING_TOP; i++){
+        if(i>0){
+            rankingTextTextures[4+i].rect.x = rankingTextTextures[4+i-1].rect.x;
+            rankingTextTextures[4+i].rect.y = rankingTextTextures[4+i-1].rect.y+55;
+        }
+        SDL_RenderCopy(rend, rankingTextTextures[4+i].texture, NULL, &rankingTextTextures[4+i].rect);
+        SDL_QueryTexture(rankingTextTextures[4+i].selected_texture, NULL, NULL, &temp.w, &temp.h);
+        temp.y = rankingTextTextures[4+i].rect.y;
+        SDL_RenderCopy(rend, rankingTextTextures[4+i].selected_texture, NULL, &temp);
+    }
+
+    //powrót
+    rankingTextTextures[2].rect.x = 70;
+    rankingTextTextures[2].rect.y = WINDOW_HEIGHT-150;
+    if(selectedOption == 1)
+        SDL_RenderCopy(rend, rankingTextTextures[2].selected_texture, NULL, &rankingTextTextures[2].rect);
+    else
+        SDL_RenderCopy(rend, rankingTextTextures[2].texture, NULL, &rankingTextTextures[2].rect);
+
+    //resetuj ranking
+    rankingTextTextures[3].rect.x = WINDOW_WIDTH-rankingTextTextures[3].rect.w-70;
+    rankingTextTextures[3].rect.y = rankingTextTextures[2].rect.y;
+    if(selectedOption == 2)
+        SDL_RenderCopy(rend, rankingTextTextures[3].selected_texture, NULL, &rankingTextTextures[3].rect);
+    else
+        SDL_RenderCopy(rend, rankingTextTextures[3].texture, NULL, &rankingTextTextures[3].rect);
+
 }
 
-void renderLose(){
-    //TO DO
+void renderEnd(int mode){
+    int nameFlag = 0;
+    SDL_Event event;
+    switch(mode){
+    case 0:
+        while(SDL_PollEvent(&event)){
+            //zatrzymanie programu
+            if(event.type == SDL_QUIT)
+                program = 0;
+            if(event.type == SDL_KEYDOWN){
+                switch(event.key.keysym.scancode){
+                case SDL_SCANCODE_ESCAPE:
+                case SDL_SCANCODE_SPACE:
+                case SDL_SCANCODE_RETURN:
+                    for(int i=0; i<7; i++){
+                        SDL_DestroyTexture(endTextTextures[i].texture);
+                        SDL_DestroyTexture(endTextTextures[i].selected_texture);
+                    }
+                    programStatus = 1;
+                    selectedOption = 1;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        //punkty
+        endTextTextures[0].rect.x = WINDOW_WIDTH/2-endTextTextures[0].rect.w/2;
+        endTextTextures[0].rect.y = 200;
+        SDL_RenderCopy(rend, endTextTextures[0].texture, NULL, &endTextTextures[0].rect);
+
+        endTextTextures[1].rect.x = WINDOW_WIDTH/2-endTextTextures[1].rect.w/2;
+        endTextTextures[1].rect.y = endTextTextures[0].rect.y+70;
+        SDL_RenderCopy(rend, endTextTextures[1].texture, NULL, &endTextTextures[1].rect);
+
+        //potrzebna ilość punktów
+        endTextTextures[2].rect.x = WINDOW_WIDTH/2-endTextTextures[2].rect.w/2;
+        endTextTextures[2].rect.y = endTextTextures[1].rect.y+100;
+        SDL_RenderCopy(rend, endTextTextures[2].texture, NULL, &endTextTextures[2].rect);
+
+        endTextTextures[3].rect.x = WINDOW_WIDTH/2-endTextTextures[3].rect.w/2;
+        endTextTextures[3].rect.y = endTextTextures[2].rect.y+60;
+        SDL_RenderCopy(rend, endTextTextures[3].texture, NULL, &endTextTextures[3].rect);
+
+        break;
+    case 1:
+        while(SDL_PollEvent(&event)){
+            //zatrzymanie programu
+            if(event.type == SDL_QUIT)
+                program = 0;
+            if(event.type == SDL_KEYDOWN){
+                switch(event.key.keysym.scancode){
+                case SDL_SCANCODE_ESCAPE:
+                case SDL_SCANCODE_RETURN:
+                    if(strcmp(player.name, " ") != 0){
+                        programStatus = 5;
+                        selectedOption = 1;
+                        ranking[RANKING_TOP-1].score = player.score;
+                        strcpy(ranking[RANKING_TOP-1].name, player.name);
+                        sortRanking();
+                        saveRanking();
+                        createRankingTextures();
+                        for(int i=0; i<7; i++){
+                            SDL_DestroyTexture(endTextTextures[i].texture);
+                            SDL_DestroyTexture(endTextTextures[i].selected_texture);
+                        }
+                    }
+                    break;
+                case SDL_SCANCODE_BACKSPACE:
+                    if(strlen(player.name) > 1){
+                        player.name[strlen(player.name) - 1] = '\0';
+                        nameFlag = 1;
+                    }else if(strlen(player.name) == 1){
+                        strcpy(player.name, " ");
+                        nameFlag = 1;
+                    }
+                    break;
+                default:
+                    break;
+                }
+
+            }else if(event.type == SDL_TEXTINPUT && strlen(player.name)<RANKING_NAME_CHARS-1){
+                int forbiddenSymbol = 0;
+                for(int i = 0; i<FORBIDDEN_SYMBOLS; i++){
+                    if(strcmp(event.text.text, forbidden_symbols[i]) == 0)
+                        forbiddenSymbol = 1;
+                }
+                if(!forbiddenSymbol){
+                    strcat(player.name, event.text.text);
+                    nameFlag = 1;
+                }
+            }
+        }
+
+        //punkty
+        endTextTextures[0].rect.x = WINDOW_WIDTH/2-endTextTextures[0].rect.w/2;
+        endTextTextures[0].rect.y = 80;
+        SDL_RenderCopy(rend, endTextTextures[0].texture, NULL, &endTextTextures[0].rect);
+
+        endTextTextures[1].rect.x = WINDOW_WIDTH/2-endTextTextures[1].rect.w/2;
+        endTextTextures[1].rect.y = endTextTextures[0].rect.y+70;
+        SDL_RenderCopy(rend, endTextTextures[1].texture, NULL, &endTextTextures[1].rect);
+
+        //gratulacje
+        endTextTextures[4].rect.x = WINDOW_WIDTH/2-endTextTextures[4].rect.w/2;
+        endTextTextures[4].rect.y = endTextTextures[1].rect.y+160;
+        SDL_RenderCopy(rend, endTextTextures[4].texture, NULL, &endTextTextures[4].rect);
+
+        //nazwa gracza
+        endTextTextures[6].rect.x = WINDOW_WIDTH/2-endTextTextures[6].rect.w/2;
+        endTextTextures[6].rect.y = endTextTextures[4].rect.y+70;
+        if(nameFlag){
+            SDL_DestroyTexture(endTextTextures[6].texture);
+            endTextTextures[6].texture = createTextTexture(font50, player.name, colorWhite, 0, font_outline50, colorBlack);
+            SDL_QueryTexture(endTextTextures[6].texture, NULL, NULL, &endTextTextures[6].rect.w, &endTextTextures[6].rect.h);
+        }
+        SDL_RenderCopy(rend, endTextTextures[6].texture, NULL, &endTextTextures[6].rect);
+
+        //potwierdź
+        endTextTextures[5].rect.x = WINDOW_WIDTH/2-endTextTextures[5].rect.w/2;
+        endTextTextures[5].rect.y = WINDOW_HEIGHT-130;
+        SDL_RenderCopy(rend, endTextTextures[5].texture, NULL, &endTextTextures[5].rect);
+
+
+        break;
+    }
 }

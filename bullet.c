@@ -8,7 +8,7 @@ Bullet *bullets[MAX_BULLETS];
 BulletType bulletTypes[BULLET_TYPES];
 
 void addBullet(float x, float y, int type){
-    int found;
+    int found = -1;
     for(int i=0;i<MAX_BULLETS;i++){
         if(bullets[i]==NULL){
             found = i;
@@ -63,22 +63,37 @@ void allBulletsInit(){
     bulletInit(4,    2,    2,     1,   150,   10,       1);
     bulletInit(5,    5,    1.3,   1,   60,    -15,      1);
     bulletInit(6,    5,    1.4,   1,   220,   8,        1);
+    bulletInit(7,    0,    -3.5,  3,   0,     0,        3);
 }
 
 void bulletCollisionUpdate(){
     for(int i=0;i<MAX_BULLETS;i++){
         if(bullets[i]){
-            if(bullets[i]->bulletType!=1){
+            if(bullets[i]->bulletType!=1 && bullets[i]->bulletType!=7){
                 bullets[i]->collisionBoxes[0].x = bullets[i]->x+3;
                 bullets[i]->collisionBoxes[0].y = bullets[i]->y+4;
                 bullets[i]->collisionBoxes[0].w = 19;
                 bullets[i]->collisionBoxes[0].h = 10;
-            }
-            if(bullets[i]->bulletType==1){
+            }else if(bullets[i]->bulletType==1){
                 bullets[i]->collisionBoxes[0].x = bullets[i]->x+3;
                 bullets[i]->collisionBoxes[0].y = bullets[i]->y;
                 bullets[i]->collisionBoxes[0].w = 9;
                 bullets[i]->collisionBoxes[0].h = 31;
+            }else if(bullets[i]->bulletType==7){
+                bullets[i]->collisionBoxes[0].x = bullets[i]->x+18;
+                bullets[i]->collisionBoxes[0].y = bullets[i]->y;
+                bullets[i]->collisionBoxes[0].w = 16;
+                bullets[i]->collisionBoxes[0].h = 45;
+
+                bullets[i]->collisionBoxes[1].x = bullets[i]->x+11;
+                bullets[i]->collisionBoxes[1].y = bullets[i]->y+42;
+                bullets[i]->collisionBoxes[1].w = 30;
+                bullets[i]->collisionBoxes[1].h = 67;
+
+                bullets[i]->collisionBoxes[1].x = bullets[i]->x;
+                bullets[i]->collisionBoxes[1].y = bullets[i]->y+87;
+                bullets[i]->collisionBoxes[1].w = 50;
+                bullets[i]->collisionBoxes[1].h = 31;
             }
 
         }

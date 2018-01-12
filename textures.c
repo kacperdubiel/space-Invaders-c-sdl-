@@ -7,45 +7,44 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include "init.h"
+#include "player.h"
 #include "enemy.h"
 #include "bullet.h"
-#include "boxes.h"
-#include "player.h"
-
-Animation *animations[MAX_ANIMATIONS];
-AnimationType animationTypes[ANIMATION_TYPES];
 
 float bg_scrolling_speed = 0.5;
 
-int heartX = -300;
+Animation *animations[MAX_ANIMATIONS];
+AnimationType animationTypes[ANIMATION_TYPES];
+Texture menuTextTextures[4];
+Texture pauseTextTextures[3];
+Texture rankingTextTextures[4+RANKING_TOP];
+Texture cooldownsTextTextures[BOX_TYPES];
+Texture endTextTextures[7];
+Texture hotkeysTextTextures[3];
+Texture iconTextures[3];
+Texture spellsCdTextures[3];
 
+int heartX = -300;
 
 //kolor czcionki
 SDL_Color colorBlack = {0, 0, 0};
 SDL_Color colorWhite = {255, 255, 255};
-SDL_Color colorGold = {255, 222, 0};
+SDL_Color colorGold  = {255, 222, 0};
 
 SDL_Texture* bgTexture, *hudTexture, *heartTexture, *tempTexture, *scoreTextTexture;
 SDL_Texture* playerTexture, *playerBulletTexture;
 SDL_Texture* animationTexture;
-SDL_Texture* startTextTexture, *selectedStartTextTexture, *helpTextTexture, *selectedHelpTextTexture, *endTextTexture, *selectedEndTextTexture;
-SDL_Texture* pauseTextTexture, *yesTextTexture, *selectedYesTextTexture, *noTextTexture, *selectedNoTextTexture;
-SDL_Texture* iconFreezeTexture, *iconFreezeCdTexture, *freezeCdTexture, *freezeHtkTexture;
 SDL_Texture* textTexture;
 SDL_Texture* arrowsTexture, *qTexture, *wTexture, *eTexture;
 
 SDL_Rect bgRect, hudRect1, hudRect2, heartRect, scoreTextRect;
 SDL_Rect playerRect, playerBulletRect, animationRect, frame;
-SDL_Rect startTextRect, helpTextRect, endTextRect;
-SDL_Rect pauseTextRect, yesTextRect, noTextRect;
-SDL_Rect iconFreezeRect, freezeCdRect, freezeHtkRect;
 SDL_Rect boxRect, textRect;
 SDL_Rect arrowsRect, keyRect;
 
 SDL_Rect hudRect1 = {0,WINDOW_HEIGHT,WINDOW_WIDTH,HUD_HEIGHT};
 SDL_Rect hudRect2 = {0,-45,WINDOW_WIDTH,HUD_HEIGHT};
 SDL_Rect heartRect = {0,WINDOW_HEIGHT-35,35,30};
-
 void surfaceError(){
     printf(">> Error! << - %s\n",SDL_GetError());
     SDL_DestroyRenderer(rend);
@@ -67,9 +66,7 @@ SDL_Texture* createTextTexture(TTF_Font* font, char *text, SDL_Color fontColor, 
     TTF_SetFontOutline(outlineFont, outline);
 
     SDL_Surface* textSur = TTF_RenderUTF8_Blended(outlineFont, text, outlineColor);
-    if(!textSur) surfaceError(rend, win);
     SDL_Surface* textSur2 = TTF_RenderUTF8_Blended(font, text, fontColor);
-    if(!textSur2) surfaceError(rend, win);
     SDL_Rect textRect = {outline, outline, textSur2->w, textSur2->h};
 
     SDL_SetSurfaceBlendMode(textSur2, SDL_BLENDMODE_BLEND);
@@ -82,6 +79,16 @@ SDL_Texture* createTextTexture(TTF_Font* font, char *text, SDL_Color fontColor, 
 }
 
 void createTexturesAndRects(){
+    //czcionki
+    font72 = TTF_OpenFont("font.ttf", 72); font_outline72 = TTF_OpenFont("font.ttf", 72);
+    font60 = TTF_OpenFont("font.ttf", 60); font_outline60 = TTF_OpenFont("font.ttf", 60);
+    font50 = TTF_OpenFont("font.ttf", 50); font_outline50 = TTF_OpenFont("font.ttf", 50);
+    font45 = TTF_OpenFont("font.ttf", 45); font_outline45 = TTF_OpenFont("font.ttf", 45);
+    font30 = TTF_OpenFont("font.ttf", 30); font_outline30 = TTF_OpenFont("font.ttf", 30);
+    font25 = TTF_OpenFont("font.ttf", 25); font_outline25 = TTF_OpenFont("font.ttf", 25);
+    font20 = TTF_OpenFont("font.ttf", 20); font_outline20 = TTF_OpenFont("font.ttf", 20);
+    font15 = TTF_OpenFont("font.ttf", 15); font_outline15 = TTF_OpenFont("font.ttf", 15);
+
     // <<-- TŁO -->>
     bgTexture = createTexture("img/bg.png");
     SDL_QueryTexture(bgTexture, NULL, NULL, &bgRect.w, &bgRect.h);
@@ -117,30 +124,31 @@ void createTexturesAndRects(){
         SDL_QueryTexture(enemyTypes[i].texture, NULL, NULL, &enemyTypes[i].rect.w, &enemyTypes[i].rect.h);
     }
 
-    // <<-- EKSPLOZJA -->>
-    for(int i=0; i<ANIMATION_TYPES; i++){
-        char pathBuffor[50] = "img/animations/animation";
-        char intBuffor[2];
-        sprintf(intBuffor, "%d", i);
-        strcat(pathBuffor,intBuffor);        strcat(pathBuffor,".png");
-
-        tempTexture = createTexture(pathBuffor);
-        animationTypes[i].texture = tempTexture;
-        SDL_QueryTexture(animationTypes[i].texture, NULL, NULL, &animationTypes[i].textureW, &animationTypes[i].textureH);
-        animationTypes[i].rect.w = animationTypes[i].textureW/animationTypes[i].verticalCount;
-        animationTypes[i].rect.h = animationTypes[i].textureH/animationTypes[i].horizontalCount;
-    }
-
     // <<-- GRACZ -->>
     playerTexture = createTexture("img/player.png");
     //pobierz wymiary gracza
     SDL_QueryTexture(playerTexture, NULL, NULL, &playerRect.w, &playerRect.h);
 
     // <<-- IKONY -->>
-    //zamrażanie
-    iconFreezeTexture = createTexture("img/icons/icon_freeze.png");
-    iconFreezeCdTexture = createTexture("img/icons/icon_freeze_cd.png");
-    SDL_QueryTexture(iconFreezeTexture, NULL, NULL, &iconFreezeRect.w, &iconFreezeRect.h);
+    for(int i=0; i<3; i++){
+        char pathBuffor[50] = "img/icons/icon";
+        char intBuffor[2];
+        sprintf(intBuffor, "%d", i);
+        strcat(pathBuffor,intBuffor);        strcat(pathBuffor,".png");
+
+        tempTexture = createTexture(pathBuffor);
+        iconTextures[i].selected_texture = tempTexture;
+
+        strcpy(pathBuffor, "img/icons/icon");
+        sprintf(intBuffor, "%d", i);
+        strcat(pathBuffor,intBuffor);        strcat(pathBuffor,"off.png");
+
+        tempTexture = createTexture(pathBuffor);
+        iconTextures[i].texture = tempTexture;
+
+        SDL_QueryTexture(iconTextures[i].texture, NULL, NULL, &iconTextures[i].rect.w, &iconTextures[i].rect.h);
+    }
+
 
     // <<-- SKRZYNKI -->>
     for(int i=0; i<BOX_TYPES; i++){
@@ -168,51 +176,123 @@ void createTexturesAndRects(){
     // <<-- NAPISY -->>
     //MENU
         //rozpocznij
-        startTextTexture = createTextTexture(font72, "ROZPOCZNiJ", colorWhite, 0, font_outline72, colorBlack);
-        selectedStartTextTexture = createTextTexture(font72, "ROZPOCZNiJ", colorGold, 0, font_outline72, colorBlack);
-        SDL_QueryTexture(startTextTexture, NULL, NULL, &startTextRect.w, &startTextRect.h);
-        startTextRect.x = -200;
-        startTextRect.y = 150;
+        menuTextTextures[0].texture = createTextTexture(font72, "ROZPOCZNiJ", colorWhite, 0, font_outline72, colorBlack);
+        menuTextTextures[0].selected_texture = createTextTexture(font72, "ROZPOCZNiJ", colorGold, 0, font_outline72, colorBlack);
+        SDL_QueryTexture(menuTextTextures[0].texture, NULL, NULL, &menuTextTextures[0].rect.w, &menuTextTextures[0].rect.h);
+        menuTextTextures[0].rect.x = -200;
+        menuTextTextures[0].rect.y = 80;
 
         //instrukcja
-        helpTextTexture = createTextTexture(font72, "iNSTRUKCJA", colorWhite, 0, font_outline72, colorBlack);
-        selectedHelpTextTexture = createTextTexture(font72, "iNSTRUKCJA", colorGold, 0, font_outline72, colorBlack);
-        SDL_QueryTexture(helpTextTexture, NULL, NULL, &helpTextRect.w, &helpTextRect.h);
-        helpTextRect.x = WINDOW_WIDTH+200;
-        helpTextRect.y = 300;
+        menuTextTextures[1].texture = createTextTexture(font72, "iNSTRUKCJA", colorWhite, 0, font_outline72, colorBlack);
+        menuTextTextures[1].selected_texture = createTextTexture(font72, "iNSTRUKCJA", colorGold, 0, font_outline72, colorBlack);
+        SDL_QueryTexture(menuTextTextures[1].texture, NULL, NULL, &menuTextTextures[1].rect.w, &menuTextTextures[1].rect.h);
+        menuTextTextures[1].rect.x = WINDOW_WIDTH+200;
+        menuTextTextures[1].rect.y = 230;
+
+        //ranking
+        menuTextTextures[2].texture = createTextTexture(font72, "RANKiNG", colorWhite, 0, font_outline72, colorBlack);
+        menuTextTextures[2].selected_texture = createTextTexture(font72, "RANKiNG", colorGold, 0, font_outline72, colorBlack);
+        SDL_QueryTexture(menuTextTextures[2].texture, NULL, NULL, &menuTextTextures[2].rect.w, &menuTextTextures[2].rect.h);
+        menuTextTextures[2].rect.x = -800;
+        menuTextTextures[2].rect.y = 380;
 
         //wyjście
-        endTextTexture = createTextTexture(font72, "WYJŚCiE", colorWhite, 0, font_outline72, colorBlack);
-        selectedEndTextTexture = createTextTexture(font72, "WYJŚCiE", colorGold, 0, font_outline72, colorBlack);
-        SDL_QueryTexture(endTextTexture, NULL, NULL, &endTextRect.w, &endTextRect.h);
-        endTextRect.x = -800;
-        endTextRect.y = 450;
+        menuTextTextures[3].texture = createTextTexture(font72, "WYJŚCiE", colorWhite, 0, font_outline72, colorBlack);
+        menuTextTextures[3].selected_texture = createTextTexture(font72, "WYJŚCiE", colorGold, 0, font_outline72, colorBlack);
+        SDL_QueryTexture(menuTextTextures[3].texture, NULL, NULL, &menuTextTextures[3].rect.w, &menuTextTextures[3].rect.h);
+        menuTextTextures[3].rect.x = WINDOW_WIDTH+900;
+        menuTextTextures[3].rect.y = 530;
 
     //GRA
-        //freezeHtk
-        freezeHtkTexture = createTextTexture(font30, "W", colorWhite, 2, font_outline30, colorBlack);
-        SDL_QueryTexture(freezeHtkTexture, NULL, NULL, &freezeHtkRect.w, &freezeHtkRect.h);
+        //przycisk ataku
+        hotkeysTextTextures[0].texture = createTextTexture(font20, "Q", colorWhite, 2, font_outline20, colorBlack);
+        SDL_QueryTexture(hotkeysTextTextures[0].texture, NULL, NULL, &hotkeysTextTextures[0].rect.w, &hotkeysTextTextures[0].rect.h);
+        //przycisk zamrażania
+        hotkeysTextTextures[1].texture = createTextTexture(font20, "W", colorWhite, 2, font_outline20, colorBlack);
+        SDL_QueryTexture(hotkeysTextTextures[1].texture, NULL, NULL, &hotkeysTextTextures[1].rect.w, &hotkeysTextTextures[1].rect.h);
+        //przycisk bomby
+        hotkeysTextTextures[2].texture = createTextTexture(font20, "E", colorWhite, 2, font_outline20, colorBlack);
+        SDL_QueryTexture(hotkeysTextTextures[2].texture, NULL, NULL, &hotkeysTextTextures[2].rect.w, &hotkeysTextTextures[2].rect.h);
+
 
     //PAUZA
         //potwierdzenie
-        pauseTextTexture = createTextTexture(font45, "CZY NA PEWNO CHCESZ WYJŚĆ?", colorWhite, 0, font_outline45, colorBlack);
-        SDL_QueryTexture(pauseTextTexture, NULL, NULL, &pauseTextRect.w, &pauseTextRect.h);
-        pauseTextRect.x = WINDOW_WIDTH/2-pauseTextRect.w/2;
-        pauseTextRect.y = 150;
+        pauseTextTextures[0].texture = createTextTexture(font45, "CZY NA PEWNO CHCESZ WYJŚĆ?", colorWhite, 0, font_outline45, colorBlack);
+        SDL_QueryTexture(pauseTextTextures[0].texture, NULL, NULL, &pauseTextTextures[0].rect.w, &pauseTextTextures[0].rect.h);
+        pauseTextTextures[0].rect.x = WINDOW_WIDTH/2-pauseTextTextures[0].rect.w/2;
+        pauseTextTextures[0].rect.y = 150;
 
         //tak
-        yesTextTexture = createTextTexture(font60, "TAK", colorWhite, 0, font_outline60, colorBlack);
-        selectedYesTextTexture = createTextTexture(font60, "TAK", colorGold, 0, font_outline60, colorBlack);
-        SDL_QueryTexture(yesTextTexture, NULL, NULL, &yesTextRect.w, &yesTextRect.h);
-        yesTextRect.x = (WINDOW_WIDTH/5)+yesTextRect.w/2;
-        yesTextRect.y = 400;
+        pauseTextTextures[1].texture = createTextTexture(font60, "TAK", colorWhite, 0, font_outline60, colorBlack);
+        pauseTextTextures[1].selected_texture = createTextTexture(font60, "TAK", colorGold, 0, font_outline60, colorBlack);
+        SDL_QueryTexture(pauseTextTextures[1].texture, NULL, NULL, &pauseTextTextures[1].rect.w, &pauseTextTextures[1].rect.h);
+        pauseTextTextures[1].rect.x = (WINDOW_WIDTH/5)+pauseTextTextures[1].rect.w/2;
+        pauseTextTextures[1].rect.y = 400;
 
         //nie
-        noTextTexture = createTextTexture(font60, "NiE", colorWhite, 0, font_outline60, colorBlack);
-        selectedNoTextTexture = createTextTexture(font60, "NiE", colorGold, 0, font_outline60, colorBlack);
-        SDL_QueryTexture(noTextTexture, NULL, NULL, &noTextRect.w, &noTextRect.h);
-        noTextRect.x = (WINDOW_WIDTH/5)*3;
-        noTextRect.y = 400;
+        pauseTextTextures[2].texture = createTextTexture(font60, "NiE", colorWhite, 0, font_outline60, colorBlack);
+        pauseTextTextures[2].selected_texture = createTextTexture(font60, "NiE", colorGold, 0, font_outline60, colorBlack);
+        SDL_QueryTexture(pauseTextTextures[2].texture, NULL, NULL, &pauseTextTextures[2].rect.w, &pauseTextTextures[2].rect.h);
+        pauseTextTextures[2].rect.x = (WINDOW_WIDTH/5)*3;
+        pauseTextTextures[2].rect.y = 400;
+}
+
+void createRankingTextures(){
+    printf("CREATING RANKING TEXTURES...\n");
+    //nazwa
+    rankingTextTextures[0].texture = createTextTexture(font45, "NAZWA GRACZA", colorWhite, 0, font_outline45, colorBlack);
+    SDL_QueryTexture(rankingTextTextures[0].texture, NULL, NULL, &rankingTextTextures[0].rect.w, &rankingTextTextures[0].rect.h);
+
+    //punkty
+    rankingTextTextures[1].texture = createTextTexture(font45, "PUNKTY", colorWhite, 0, font_outline45, colorBlack);
+    SDL_QueryTexture(rankingTextTextures[1].texture, NULL, NULL, &rankingTextTextures[1].rect.w, &rankingTextTextures[1].rect.h);
+
+    //powrót
+    rankingTextTextures[2].texture = createTextTexture(font50, "POWRÓT", colorWhite, 0, font_outline50, colorBlack);
+    rankingTextTextures[2].selected_texture = createTextTexture(font50, "POWRÓT", colorGold, 0, font_outline50, colorBlack);
+    SDL_QueryTexture(rankingTextTextures[2].texture, NULL, NULL, &rankingTextTextures[2].rect.w, &rankingTextTextures[2].rect.h);
+
+    //reset
+    rankingTextTextures[3].texture = createTextTexture(font50, "RESETUJ RANKiNG", colorWhite, 0, font_outline50, colorBlack);
+    rankingTextTextures[3].selected_texture = createTextTexture(font50, "RESETUJ RANKiNG", colorGold, 0, font_outline50, colorBlack);
+    SDL_QueryTexture(rankingTextTextures[3].texture, NULL, NULL, &rankingTextTextures[3].rect.w, &rankingTextTextures[3].rect.h);
+
+    readRanking();
+    for(int i=0; i<RANKING_TOP;i++){
+        rankingTextTextures[4+i].texture = createTextTexture(font30, ranking[i].name, colorWhite, 0, font_outline30, colorBlack);
+        sprintf(textBuffer, "%d", ranking[i].score);
+        rankingTextTextures[4+i].selected_texture = createTextTexture(font30, textBuffer, colorWhite, 0, font_outline30, colorBlack);
+        SDL_QueryTexture(rankingTextTextures[4+i].texture, NULL, NULL, &rankingTextTextures[4+i].rect.w, &rankingTextTextures[4+i].rect.h);
+    }
+
+}
+
+void createEndTextures(){
+    //punkty
+    endTextTextures[0].texture = createTextTexture(font45, "iLOŚĆ UZYSKANYCH PUNKTÓW:", colorWhite, 0, font_outline45, colorBlack);
+    SDL_QueryTexture(endTextTextures[0].texture, NULL, NULL, &endTextTextures[0].rect.w, &endTextTextures[0].rect.h);
+
+    sprintf(textBuffer, "%d", player.score);
+    endTextTextures[1].texture = createTextTexture(font45, textBuffer, colorGold, 0, font_outline45, colorBlack);
+    SDL_QueryTexture(endTextTextures[1].texture, NULL, NULL, &endTextTextures[1].rect.w, &endTextTextures[1].rect.h);
+
+    //potrzebna ilość punktów
+    endTextTextures[2].texture = createTextTexture(font30, "ABY ZNALEŹĆ SiĘ W RANKiNGU MUSiSZ UZYSKAĆ ", colorWhite, 0, font_outline30, colorBlack);
+    SDL_QueryTexture(endTextTextures[2].texture, NULL, NULL, &endTextTextures[2].rect.w, &endTextTextures[2].rect.h);
+
+    sprintf(textBuffer, "WiĘCEJ NiŻ %d PUNKTÓW", player.score);
+    endTextTextures[3].texture = createTextTexture(font30, textBuffer, colorWhite, 0, font_outline30, colorBlack);
+    SDL_QueryTexture(endTextTextures[3].texture, NULL, NULL, &endTextTextures[3].rect.w, &endTextTextures[3].rect.h);
+
+    //wygrana
+    endTextTextures[4].texture = createTextTexture(font30, "GRATULACJE, WPiSZ NAZWĘ GRACZA:", colorWhite, 0, font_outline30, colorBlack);
+    SDL_QueryTexture(endTextTextures[4].texture, NULL, NULL, &endTextTextures[4].rect.w, &endTextTextures[4].rect.h);
+
+    endTextTextures[5].texture = createTextTexture(font45, "POTWiERDŹ NAZWĘ KLAWiSZEM ENTER", colorGold, 0, font_outline45, colorBlack);
+    SDL_QueryTexture(endTextTextures[5].texture, NULL, NULL, &endTextTextures[5].rect.w, &endTextTextures[5].rect.h);
+
+    endTextTextures[6].texture = createTextTexture(font50, player.name, colorWhite, 0, font_outline50, colorBlack);
+    SDL_QueryTexture(endTextTextures[6].texture, NULL, NULL, &endTextTextures[6].rect.w, &endTextTextures[6].rect.h);
 
 }
 
@@ -236,8 +316,23 @@ int collisionCheck(int n, SDL_Rect collBoxes[n], int m, SDL_Rect collBoxes2[m]){
     return 0;
 }
 
+void createAnimationTextures(){
+    for(int i=0; i<ANIMATION_TYPES; i++){
+        char pathBuffor[50] = "img/animations/animation";
+        char intBuffor[2];
+        sprintf(intBuffor, "%d", i);
+        strcat(pathBuffor,intBuffor);        strcat(pathBuffor,".png");
+
+        tempTexture = createTexture(pathBuffor);
+        animationTypes[i].texture = tempTexture;
+        SDL_QueryTexture(animationTypes[i].texture, NULL, NULL, &animationTypes[i].textureW, &animationTypes[i].textureH);
+        animationTypes[i].rect.w = animationTypes[i].textureW/animationTypes[i].verticalCount;
+        animationTypes[i].rect.h = animationTypes[i].textureH/animationTypes[i].horizontalCount;
+    }
+}
+
 void addAnimation(float x, float y, int angle, int type){
-    int found;
+    int found = -1;
     for(int i=0;i<MAX_ANIMATIONS;i++){
         if(animations[i]==NULL){
             found = i;
@@ -265,15 +360,17 @@ void removeAnimation(int i){
 }
 
 void animationInit(int type, int verticalCount, int horizontalCount){
-    animationTypes[type].verticalCount = verticalCount;
-    animationTypes[type].horizontalCount = horizontalCount;
+    if(type>=0 && type<ANIMATION_TYPES){
+        animationTypes[type].verticalCount = verticalCount;
+        animationTypes[type].horizontalCount = horizontalCount;
+    }
 }
 
 void allAnimationInit(){
     animationInit(0, 10, 12);
     animationInit(1, 7, 8);
-    animationInit(2, 11, 12);
-    animationInit(3, 14, 15);
+    animationInit(2, 11, 8);
+    animationInit(3, 13, 10);
     animationInit(4, 12, 13);
     animationInit(5, 9, 10);
 }
@@ -284,5 +381,8 @@ void cleanMap(){
     }
     for(int i=0;i<MAX_ENEMIES;i++){
         if(enemies[i]) removeEnemy(i);
+    }
+    for(int i=0;i<MAX_BOXES;i++){
+        if(boxes[i]) removeBox(i);
     }
 }

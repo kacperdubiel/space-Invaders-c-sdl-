@@ -7,7 +7,7 @@ Box *boxes[MAX_BOXES];
 BoxType boxTypes[BOX_TYPES];
 
 void addBox(float x, float y, int type){
-    int found;
+    int found = -1;
     for(int i=0;i<MAX_BOXES;i++){
         if(boxes[i]==NULL){
             found = i;
@@ -36,11 +36,11 @@ void boxInit(int type, float dropChance){
 void allBoxesInit(){
     // LISTA SKRZYNEK
     //     TYPE,  DCHANCE
-    boxInit(0,    60);
-    boxInit(1,    120);
-    boxInit(2,    90);
-    boxInit(3,    120);
-    boxInit(4,    100);
+    boxInit(0,    2*60);
+    boxInit(1,    2*120);
+    boxInit(2,    2*90);
+    boxInit(3,    2*120);
+    boxInit(4,    2*100);
 }
 
 void boxCollisionUpdate(){

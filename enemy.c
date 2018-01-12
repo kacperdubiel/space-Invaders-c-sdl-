@@ -50,7 +50,7 @@ void addEnemy(int enemyType, float x, float y, float x_vel, float y_vel, int lif
         enemies[i]->life = life;
         enemies[i]->cooldown = STARTING_COOLDOWN;
         enemies[i]->freeze = 0;
-        printf("Created Enemy(%d)[%d;%d]\n",i,(int)enemies[i]->x,(int)enemies[i]->y);
+        //printf("Created Enemy(%d)[%d;%d]\n",i,(int)enemies[i]->x,(int)enemies[i]->y);
     }
 }
 

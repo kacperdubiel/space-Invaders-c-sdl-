@@ -2,10 +2,12 @@
 
 #include "init.h"
 #include "textures.h"
+#include <string.h>
 
 Player player;
 
 void addPlayerBasicStats(){
+    strcpy(player.name, "GRACZ");
     player.right = 0;
     player.left = 0;
     player.up = 0;
@@ -21,13 +23,15 @@ void addPlayerBasicStats(){
     player.stage = FIRST_STAGE;
 
     player.damage = 1;
-    player.speed = 6;
+    player.speed = 5;
     player.bullet_speed = 5;
     player.bullet_amplitude = 35; //w px
     player.attack_speed = 25; //co ile klatek można strzelać
     player.attCooldown = player.attack_speed;
-    player.freezeCooldown = 3;
+    player.freezeCooldown = 3; //czas do użycia zamrożenia na początku gry
     player.freezeTime = 0;
+    player.bombs = 555;
+    player.bombsCooldown = 10;
     for(int i=0; i<BOX_TYPES; i++)
         player.timers[i] = 0;
 }

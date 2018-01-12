@@ -1,15 +1,15 @@
 #ifndef INIT_H_INCLUDED
 #define INIT_H_INCLUDED
 
-#include <SDL.h>
-
 #define WINDOW_NAME   "Space Invaders"
 #define WINDOW_WIDTH  (960)
 #define WINDOW_HEIGHT (720)
 #define FPS           (50)
 
 #define FIRST_STAGE 1
-#define DEAD_TIMER 200
+#define DEAD_TIMER 150
+
+#include <SDL.h>
 
 extern int unsigned frames_counter, current_time, last_time;
 extern int program;

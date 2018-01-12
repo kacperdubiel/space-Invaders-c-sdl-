@@ -14,10 +14,10 @@ int selectedOption = 1;
 int deadTimer = DEAD_TIMER;
 int gameEnd = 0;
 
-char textBuffer[70];
-
 SDL_Window* win;
 SDL_Renderer* rend;
+
+char textBuffer[70];
 
 int init(){
     // inicjalizacja SDL
@@ -49,4 +49,5 @@ int init(){
         return 1;
     }
     return 0;
+
 }

@@ -60,6 +60,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="player.h" />
+		<Unit filename="ranking.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="ranking.h" />
 		<Unit filename="textures.c">
 			<Option compilerVar="CC" />
 		</Unit>
