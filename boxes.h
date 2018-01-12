@@ -1,7 +1,7 @@
 #ifndef BOXES_H_INCLUDED
 #define BOXES_H_INCLUDED
 
-#define BOX_TYPES 5
+#define BOX_TYPES 6
 #define MAX_BOXES 50
 
 #include <SDL.h>

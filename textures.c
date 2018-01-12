@@ -19,7 +19,7 @@ Texture menuTextTextures[4];
 Texture pauseTextTextures[3];
 Texture rankingTextTextures[4+RANKING_TOP];
 Texture cooldownsTextTextures[BOX_TYPES];
-Texture endTextTextures[7];
+Texture endTextTextures[10];
 Texture hotkeysTextTextures[3];
 Texture iconTextures[3];
 Texture spellsCdTextures[3];
@@ -36,11 +36,13 @@ SDL_Texture* playerTexture, *playerBulletTexture;
 SDL_Texture* animationTexture;
 SDL_Texture* textTexture;
 SDL_Texture* arrowsTexture, *qTexture, *wTexture, *eTexture;
+SDL_Texture* lifebarBackground, *lifebar, *lifebarPercent;
 
 SDL_Rect bgRect, hudRect1, hudRect2, heartRect, scoreTextRect;
 SDL_Rect playerRect, playerBulletRect, animationRect, frame;
 SDL_Rect boxRect, textRect;
 SDL_Rect arrowsRect, keyRect;
+SDL_Rect lifebarBackgroundRect, lifebarRect, lifebarPercentRect;
 
 SDL_Rect hudRect1 = {0,WINDOW_HEIGHT,WINDOW_WIDTH,HUD_HEIGHT};
 SDL_Rect hudRect2 = {0,-45,WINDOW_WIDTH,HUD_HEIGHT};
@@ -80,6 +82,7 @@ SDL_Texture* createTextTexture(TTF_Font* font, char *text, SDL_Color fontColor, 
 
 void createTexturesAndRects(){
     //czcionki
+    font85 = TTF_OpenFont("font.ttf", 85); font_outline85 = TTF_OpenFont("font.ttf", 85);
     font72 = TTF_OpenFont("font.ttf", 72); font_outline72 = TTF_OpenFont("font.ttf", 72);
     font60 = TTF_OpenFont("font.ttf", 60); font_outline60 = TTF_OpenFont("font.ttf", 60);
     font50 = TTF_OpenFont("font.ttf", 50); font_outline50 = TTF_OpenFont("font.ttf", 50);
@@ -123,6 +126,18 @@ void createTexturesAndRects(){
         enemyTypes[i].texture = tempTexture;
         SDL_QueryTexture(enemyTypes[i].texture, NULL, NULL, &enemyTypes[i].rect.w, &enemyTypes[i].rect.h);
     }
+
+    // <<-- PASEK ŻYCIA BOSSA -->>
+    lifebarBackground = createTexture("img/misc/lifebar_background.png");
+    SDL_QueryTexture(lifebarBackground, NULL, NULL, &lifebarBackgroundRect.w, &lifebarBackgroundRect.h);
+    lifebarBackgroundRect.x = WINDOW_WIDTH/2-lifebarBackgroundRect.w/2;
+    lifebarBackgroundRect.y = HUD_HEIGHT/2-lifebarBackgroundRect.h/2;
+
+    lifebar = createTexture("img/misc/lifebar.png");
+    SDL_QueryTexture(lifebar, NULL, NULL, &lifebarRect.w, &lifebarRect.h);
+    lifebarRect.x = WINDOW_WIDTH/2-lifebarRect.w/2;
+    lifebarRect.y = HUD_HEIGHT/2-lifebarBackgroundRect.h/2;
+
 
     // <<-- GRACZ -->>
     playerTexture = createTexture("img/player.png");
@@ -268,31 +283,45 @@ void createRankingTextures(){
 }
 
 void createEndTextures(){
-    //punkty
-    endTextTextures[0].texture = createTextTexture(font45, "iLOŚĆ UZYSKANYCH PUNKTÓW:", colorWhite, 0, font_outline45, colorBlack);
+    //koniec gry
+    endTextTextures[0].texture = createTextTexture(font45, "KONiEC GRY", colorWhite, 0, font_outline45, colorBlack);
     SDL_QueryTexture(endTextTextures[0].texture, NULL, NULL, &endTextTextures[0].rect.w, &endTextTextures[0].rect.h);
 
+    //punkty
     sprintf(textBuffer, "%d", player.score);
-    endTextTextures[1].texture = createTextTexture(font45, textBuffer, colorGold, 0, font_outline45, colorBlack);
+    endTextTextures[1].texture = createTextTexture(font45, textBuffer, colorWhite, 0, font_outline45, colorBlack);
     SDL_QueryTexture(endTextTextures[1].texture, NULL, NULL, &endTextTextures[1].rect.w, &endTextTextures[1].rect.h);
 
-    //potrzebna ilość punktów
-    endTextTextures[2].texture = createTextTexture(font30, "ABY ZNALEŹĆ SiĘ W RANKiNGU MUSiSZ UZYSKAĆ ", colorWhite, 0, font_outline30, colorBlack);
+    sprintf(textBuffer, "BONUS ZA ŻYCiE: %d", lifeBonusPoints);
+    endTextTextures[2].texture = createTextTexture(font30, textBuffer, colorWhite, 0, font_outline30, colorBlack);
     SDL_QueryTexture(endTextTextures[2].texture, NULL, NULL, &endTextTextures[2].rect.w, &endTextTextures[2].rect.h);
 
-    sprintf(textBuffer, "WiĘCEJ NiŻ %d PUNKTÓW", player.score);
+    sprintf(textBuffer, "BONUS CZASOWY WALKi fiNAŁOWEJ: %d", bossBonusPoints);
     endTextTextures[3].texture = createTextTexture(font30, textBuffer, colorWhite, 0, font_outline30, colorBlack);
     SDL_QueryTexture(endTextTextures[3].texture, NULL, NULL, &endTextTextures[3].rect.w, &endTextTextures[3].rect.h);
 
-    //wygrana
-    endTextTextures[4].texture = createTextTexture(font30, "GRATULACJE, WPiSZ NAZWĘ GRACZA:", colorWhite, 0, font_outline30, colorBlack);
+    sprintf(textBuffer, "%d", player.score+lifeBonusPoints+bossBonusPoints);
+    endTextTextures[4].texture = createTextTexture(font85, textBuffer, colorGold, 0, font_outline85, colorBlack);
     SDL_QueryTexture(endTextTextures[4].texture, NULL, NULL, &endTextTextures[4].rect.w, &endTextTextures[4].rect.h);
 
-    endTextTextures[5].texture = createTextTexture(font45, "POTWiERDŹ NAZWĘ KLAWiSZEM ENTER", colorGold, 0, font_outline45, colorBlack);
+    //potrzebna ilość punktów
+    endTextTextures[5].texture = createTextTexture(font30, "ABY ZNALEŹĆ SiĘ W RANKiNGU MUSiSZ UZYSKAĆ ", colorWhite, 0, font_outline30, colorBlack);
     SDL_QueryTexture(endTextTextures[5].texture, NULL, NULL, &endTextTextures[5].rect.w, &endTextTextures[5].rect.h);
 
-    endTextTextures[6].texture = createTextTexture(font50, player.name, colorWhite, 0, font_outline50, colorBlack);
+    sprintf(textBuffer, "WiĘCEJ NiŻ %d PUNKTÓW", player.score);
+    endTextTextures[6].texture = createTextTexture(font30, textBuffer, colorGold, 0, font_outline30, colorBlack);
     SDL_QueryTexture(endTextTextures[6].texture, NULL, NULL, &endTextTextures[6].rect.w, &endTextTextures[6].rect.h);
+
+    //wygrana
+    endTextTextures[7].texture = createTextTexture(font30, "GRATULACJE, WPiSZ NAZWĘ GRACZA:", colorWhite, 0, font_outline30, colorBlack);
+    SDL_QueryTexture(endTextTextures[7].texture, NULL, NULL, &endTextTextures[7].rect.w, &endTextTextures[7].rect.h);
+
+    endTextTextures[8].texture = createTextTexture(font50, player.name, colorGold, 0, font_outline50, colorBlack);
+    SDL_QueryTexture(endTextTextures[8].texture, NULL, NULL, &endTextTextures[8].rect.w, &endTextTextures[8].rect.h);
+
+    endTextTextures[9].texture = createTextTexture(font30, "POTWiERDŹ NAZWĘ KLAWiSZEM ENTER", colorWhite, 0, font_outline30, colorBlack);
+    SDL_QueryTexture(endTextTextures[9].texture, NULL, NULL, &endTextTextures[9].rect.w, &endTextTextures[9].rect.h);
+
 
 }
 
@@ -384,5 +413,8 @@ void cleanMap(){
     }
     for(int i=0;i<MAX_BOXES;i++){
         if(boxes[i]) removeBox(i);
+    }
+    for(int i=0;i<MAX_ANIMATIONS;i++){
+        if(animations[i]) removeAnimation(i);
     }
 }

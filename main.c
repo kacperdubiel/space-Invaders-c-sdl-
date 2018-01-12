@@ -80,8 +80,6 @@ int main( int argc, char* args[] ) {
         //główne renderowanie
         SDL_RenderPresent(rend);
 
-        //licznik klatek
-        frames_counter++;
         //klatki na sekunde
         SDL_Delay(1000/FPS);
     }
@@ -251,7 +249,6 @@ void renderGame(){
             case SDL_SCANCODE_LEFT:
                 player.left = 1;
                 break;
-            case SDL_SCANCODE_SPACE:
             case SDL_SCANCODE_Q:
                 player.fire = 1;
                 break;
@@ -318,26 +315,33 @@ void renderGame(){
     //koniec gry;
     if(player.life<=0){
         gameEnd = 1;
-        player.x = -100;
-        player.y = -100;
+        player.x = WINDOW_WIDTH;
+        player.y = WINDOW_HEIGHT;
         player.attCooldown = 0;
         player.freezeCooldown = -1;
+        player.bombsCooldown = BOMBS_COOLDOWN;
     }
 
     if(gameEnd){
         deadTimer--;
         if(deadTimer<=0){
             if(player.life>5)
-                player.score += player.score*(player.life-5)*0.05;
+                lifeBonusPoints = player.score*(player.life-5)*0.05;
+            else
+                lifeBonusPoints = 0;
 
-            createEndTextures();
-            if(player.score>ranking[RANKING_TOP-1].score){
+            if(player.life>0)
+                bossBonusPoints = enemyTypes[7].score*((float)bossPointsTimer/BOSS_BONUS_POINTS_TIME);
+
+            if(player.score+lifeBonusPoints+bossBonusPoints>ranking[RANKING_TOP-1].score){
                 programStatus = 7;
                 selectedOption = 1;
             }else{
                 programStatus = 6;
                 selectedOption = 1;
             }
+            createEndTextures();
+            player.score += lifeBonusPoints+bossBonusPoints;
         }
     }
 
@@ -387,9 +391,17 @@ void renderGame(){
         }else
             player.bullet_speed = 5;
 
+        if(enemies[0] && !enemies[0]->freeze && enemies[0]->enemyType == 7){
+            bossFlag++;
+            bossBoxFlag++;
+        }
+        if(enemies[0] && enemies[0]->enemyType == 7 && bossPointsTimer>0 && enemies[0]->y>=60){
+            bossPointsTimer--;
+        }
+
         timerFlag = 1;
         printf("FPS: %d\n",frames_counter);
-        frames_counter=0;
+        frames_counter = 0;
         last_time = current_time;
     }
 
@@ -414,6 +426,7 @@ void renderGame(){
         player.y-=3;
         player.x = (WINDOW_WIDTH - playerRect.w) / 2;
         player.attCooldown = 0;
+        player.bombsCooldown = BOMBS_COOLDOWN;
         scoreFlag = 1;
         bombsFlag = 1;
     }
@@ -431,7 +444,7 @@ void renderGame(){
     //skrzynki
     for(int i=0; i<MAX_BOXES; i++){
         if(boxes[i]){
-            int type = boxes[i]->boxType;
+            int type  = boxes[i]->boxType;
             boxRect.x = boxes[i]->x;
             boxRect.y = boxes[i]->y;
 
@@ -449,6 +462,9 @@ void renderGame(){
             if(collisionCheck(1, boxes[i]->collisionBoxes, m, player.collisionBoxes)){
                 if(boxes[i]->boxType == 0){
                     if(player.life < MAX_LIFE) player.life++;
+                }else if(boxes[i]->boxType == 5){
+                    player.bombs++;
+                    bombsFlag++;
                 }else{
                     player.timers[type] = BONUS_DURATION;
                     timerFlag = 1;
@@ -489,7 +505,12 @@ void renderGame(){
                     int m = enemyTypes[type].collisionBoxesCount;
 
                     if(collisionCheck(n, bullets[i]->collisionBoxes, m, enemies[j]->collisionBoxes)){
-                        enemies[j]->life-=bullets[i]->bullet_damage;
+                        if(type == 7 && enemies[0]->y>=59){
+                            bossLifeFlag++;
+                            enemies[j]->life-=bullets[i]->bullet_damage;
+                        }else if(type != 7){
+                            enemies[j]->life-=bullets[i]->bullet_damage;
+                        }
                         addAnimation(bullets[i]->x+bulletTypes[bType].rect.w/2, bullets[i]->y+bulletTypes[bType].rect.h/2, rand()%360, 0);
                         removeBullet(i);
                         if(enemies[j]->life<=0){
@@ -520,15 +541,16 @@ void renderGame(){
     }
 
     // <<-- KOLEJNE FALE POTWORÓW -->>
-    if(stageCleared && player.stage<=LAST_STAGE+1){
+    if(stageCleared && player.stage<=LAST_STAGE){
+        player.stage++;
         if(player.stage>LAST_STAGE){
             deadTimer = 120;
             gameEnd = 1;
+        }else{
+            printf(">> Stage %d! <<\n",player.stage);
+            addEnemies(player.stage);
+            bg_scrolling_speed += BG_SCROLLING_SPEED_INCREASE;
         }
-        addEnemies(player.stage);
-        printf(">> Stage %d! <<\n",player.stage);
-        player.stage++;
-        bg_scrolling_speed += BG_SCROLLING_SPEED_INCREASE;
     }
 
     //rysowanie i ruch wrogów
@@ -546,11 +568,12 @@ void renderGame(){
             if(collisionCheck(n, enemies[i]->collisionBoxes, m, player.collisionBoxes)){
                 player.life-=enemyTypes[type].damage;
                 addAnimation(enemies[i]->x+enemyTypes[type].rect.w/2, enemies[i]->y+enemyTypes[type].rect.h/2, rand()%360, 0);
-                if(player.life==0)
+                if(player.life<=0)
                     addAnimation(player.x+playerRect.w/2, player.y+playerRect.h/2, 0, 3);
                 else
                     addAnimation(player.x+playerRect.w/2, player.y+playerRect.h/2, rand()%360, 0);
                 addAnimation(heartRect.x+heartRect.w/2, heartRect.y+heartRect.h/2, rand()%360, 1);
+                if(type!=7)
                 removeEnemy(i);
                 continue;
             }else
@@ -558,7 +581,11 @@ void renderGame(){
 
             if(enemies[0] && enemies[0]->y<60){
                 for(int j=0;j<MAX_ENEMIES;j++){
-                    if(enemies[j] && !enemies[j]->freeze) enemies[j]->y+=0.3;
+                    if(enemies[j] && !enemies[j]->freeze && enemies[j]->enemyType != 7) enemies[j]->y+=0.3;
+                    else if(enemies[j] && !enemies[j]->freeze && enemies[j]->enemyType == 7){
+                        enemies[j]->y+=2;
+                        bossLifeFlag++;
+                    }
                 }
             }else{
                 if((enemies[i]->cooldown<=0) && !enemies[i]->freeze){
@@ -567,7 +594,10 @@ void renderGame(){
                         roll = rand();
                     roll=roll%2000+1;
                     if(roll<=enemyTypes[type].bulletChance){
-                        addBullet(enemies[i]->x+enemyTypes[type].rect.w/2, enemies[i]->y+enemyTypes[type].rect.h-5, enemyTypes[type].bulletType);
+                        if(type!=7)
+                            addBullet(enemies[i]->x+enemyTypes[type].rect.w/2, enemies[i]->y+enemyTypes[type].rect.h-5, enemyTypes[type].bulletType);
+                        else
+                            addBullet(enemies[i]->x+enemyTypes[type].rect.w/2-5, enemies[i]->y+enemyTypes[type].rect.h-50, enemyTypes[type].bulletType);
                         enemies[i]->cooldown = enemyTypes[type].cooldownTime;
                     }
                 }
@@ -630,13 +660,15 @@ void renderGame(){
                     removeBullet(i);
                     break;
                 }
-            }else if(bType == 7){
+            }else if(bType == 7){ //BOMBY
                 for(int j=0; j<MAX_ENEMIES; j++){
                     if(enemies[j]){
                         int eType = enemies[j]->enemyType;
                         int m = enemyTypes[eType].collisionBoxesCount;
 
                         if(collisionCheck(n, bullets[i]->collisionBoxes, m, enemies[j]->collisionBoxes)){
+                            if(eType == 7);
+                                bossLifeFlag++;
                             for(int k = 0; k<MAX_ENEMIES;k++){
                                 if(enemies[k]){
                                     int eType2 = enemies[k]->enemyType;
@@ -747,7 +779,6 @@ void renderGame(){
         heartX+=4;
     else
         heartX = 5;
-
     for(int i=0;i<player.life;i++){
         SDL_RenderCopy(rend, heartTexture, NULL, &heartRect);
         if(i+1<player.life)
@@ -778,10 +809,47 @@ void renderGame(){
 
     SDL_RenderCopy(rend, hudTexture, NULL, &hudRect2);
 
+    // <<-- WALKA FINAŁOWA -->>
+    if(player.stage == 8 && enemies[0] && enemies[0]->enemyType == 7 && enemies[0]->y >= 60){
+        SDL_RenderCopy(rend, lifebarBackground, NULL, &lifebarBackgroundRect);
+
+        if(bossLifeFlag){
+            SDL_QueryTexture(lifebar, NULL, NULL, &lifebarRect.w, &lifebarRect.h);
+            float lifePercent = (float)enemies[0]->life/enemyTypes[7].life;
+            lifebarRect.w *= lifePercent;
+
+            SDL_DestroyTexture(lifebarPercent);
+            sprintf(textBuffer, "%3.f%%", lifePercent*100);
+            lifebarPercent = createTextTexture(font25, textBuffer, colorWhite, 2, font_outline25, colorBlack);
+            SDL_QueryTexture(lifebarPercent, NULL, NULL, &lifebarPercentRect.w, &lifebarPercentRect.h);
+            lifebarPercentRect.x = lifebarBackgroundRect.x+lifebarBackgroundRect.w/2-lifebarPercentRect.w/2;
+            lifebarPercentRect.y = 4;
+
+            bossLifeFlag = 0;
+        }
+
+        SDL_RenderCopy(rend, lifebar, NULL, &lifebarRect);
+        SDL_RenderCopy(rend, lifebarPercent, NULL, &lifebarPercentRect);
+
+        if(bossFlag >= BOSS_BULLETS_COOLDOWN){
+            addBullet(enemies[0]->x+16, enemies[0]->y+74, 9);
+            addBullet(enemies[0]->x+115, enemies[0]->y+74, 9);
+            bossFlag = 0;
+        }
+
+        if(bossBoxFlag >= BOSS_RANDOM_BOX_COOLDOWN){
+            int box = rand()%BOX_TYPES;
+            addBox((rand()%(WINDOW_WIDTH-80))+40, 0, box);
+
+            bossBoxFlag = 0;
+        }
+
+    }
+
     //ikony bonusów
     boxRect.x = 10;
     boxRect.y = 8;
-    for(int i = 1; i<BOX_TYPES; i++){
+    for(int i = 1; i<BOX_TYPES-1; i++){
         if(player.timers[i]>0){
             SDL_RenderCopy(rend, boxTypes[i].texture, NULL, &boxRect);
 
@@ -813,6 +881,8 @@ void renderGame(){
     }
     SDL_RenderCopy(rend, scoreTextTexture, NULL, &scoreTextRect);
 
+    //licznik klatek
+        frames_counter++;
 }
 
 void renderInstruction(){
@@ -1155,23 +1225,36 @@ void renderEnd(int mode){
             }
         }
 
-        //punkty
+        //koniec gry
         endTextTextures[0].rect.x = WINDOW_WIDTH/2-endTextTextures[0].rect.w/2;
-        endTextTextures[0].rect.y = 200;
+        endTextTextures[0].rect.y = 70;
         SDL_RenderCopy(rend, endTextTextures[0].texture, NULL, &endTextTextures[0].rect);
 
+        //punkty
         endTextTextures[1].rect.x = WINDOW_WIDTH/2-endTextTextures[1].rect.w/2;
         endTextTextures[1].rect.y = endTextTextures[0].rect.y+70;
         SDL_RenderCopy(rend, endTextTextures[1].texture, NULL, &endTextTextures[1].rect);
 
-        //potrzebna ilość punktów
         endTextTextures[2].rect.x = WINDOW_WIDTH/2-endTextTextures[2].rect.w/2;
-        endTextTextures[2].rect.y = endTextTextures[1].rect.y+100;
+        endTextTextures[2].rect.y = endTextTextures[1].rect.y+60;
         SDL_RenderCopy(rend, endTextTextures[2].texture, NULL, &endTextTextures[2].rect);
 
         endTextTextures[3].rect.x = WINDOW_WIDTH/2-endTextTextures[3].rect.w/2;
-        endTextTextures[3].rect.y = endTextTextures[2].rect.y+60;
+        endTextTextures[3].rect.y = endTextTextures[2].rect.y+50;
         SDL_RenderCopy(rend, endTextTextures[3].texture, NULL, &endTextTextures[3].rect);
+
+        endTextTextures[4].rect.x = WINDOW_WIDTH/2-endTextTextures[4].rect.w/2;
+        endTextTextures[4].rect.y = endTextTextures[3].rect.y+70;
+        SDL_RenderCopy(rend, endTextTextures[4].texture, NULL, &endTextTextures[4].rect);
+
+        //potrzebna ilość punktów
+        endTextTextures[5].rect.x = WINDOW_WIDTH/2-endTextTextures[5].rect.w/2;
+        endTextTextures[5].rect.y = endTextTextures[4].rect.y+170;
+        SDL_RenderCopy(rend, endTextTextures[5].texture, NULL, &endTextTextures[5].rect);
+
+        endTextTextures[6].rect.x = WINDOW_WIDTH/2-endTextTextures[6].rect.w/2;
+        endTextTextures[6].rect.y = endTextTextures[5].rect.y+70;
+        SDL_RenderCopy(rend, endTextTextures[6].texture, NULL, &endTextTextures[6].rect);
 
         break;
     case 1:
@@ -1223,34 +1306,47 @@ void renderEnd(int mode){
             }
         }
 
-        //punkty
+        //koniec gry
         endTextTextures[0].rect.x = WINDOW_WIDTH/2-endTextTextures[0].rect.w/2;
-        endTextTextures[0].rect.y = 80;
+        endTextTextures[0].rect.y = 50;
         SDL_RenderCopy(rend, endTextTextures[0].texture, NULL, &endTextTextures[0].rect);
 
+        //punkty
         endTextTextures[1].rect.x = WINDOW_WIDTH/2-endTextTextures[1].rect.w/2;
         endTextTextures[1].rect.y = endTextTextures[0].rect.y+70;
         SDL_RenderCopy(rend, endTextTextures[1].texture, NULL, &endTextTextures[1].rect);
 
-        //gratulacje
+        endTextTextures[2].rect.x = WINDOW_WIDTH/2-endTextTextures[2].rect.w/2;
+        endTextTextures[2].rect.y = endTextTextures[1].rect.y+60;
+        SDL_RenderCopy(rend, endTextTextures[2].texture, NULL, &endTextTextures[2].rect);
+
+        endTextTextures[3].rect.x = WINDOW_WIDTH/2-endTextTextures[3].rect.w/2;
+        endTextTextures[3].rect.y = endTextTextures[2].rect.y+50;
+        SDL_RenderCopy(rend, endTextTextures[3].texture, NULL, &endTextTextures[3].rect);
+
         endTextTextures[4].rect.x = WINDOW_WIDTH/2-endTextTextures[4].rect.w/2;
-        endTextTextures[4].rect.y = endTextTextures[1].rect.y+160;
+        endTextTextures[4].rect.y = endTextTextures[3].rect.y+70;
         SDL_RenderCopy(rend, endTextTextures[4].texture, NULL, &endTextTextures[4].rect);
 
+        //gratulacje
+        endTextTextures[7].rect.x = WINDOW_WIDTH/2-endTextTextures[7].rect.w/2;
+        endTextTextures[7].rect.y = endTextTextures[4].rect.y+150;
+        SDL_RenderCopy(rend, endTextTextures[7].texture, NULL, &endTextTextures[7].rect);
+
         //nazwa gracza
-        endTextTextures[6].rect.x = WINDOW_WIDTH/2-endTextTextures[6].rect.w/2;
-        endTextTextures[6].rect.y = endTextTextures[4].rect.y+70;
+        endTextTextures[8].rect.x = WINDOW_WIDTH/2-endTextTextures[8].rect.w/2;
+        endTextTextures[8].rect.y = endTextTextures[7].rect.y+70;
         if(nameFlag){
-            SDL_DestroyTexture(endTextTextures[6].texture);
-            endTextTextures[6].texture = createTextTexture(font50, player.name, colorWhite, 0, font_outline50, colorBlack);
-            SDL_QueryTexture(endTextTextures[6].texture, NULL, NULL, &endTextTextures[6].rect.w, &endTextTextures[6].rect.h);
+            SDL_DestroyTexture(endTextTextures[8].texture);
+            endTextTextures[8].texture = createTextTexture(font50, player.name, colorGold, 0, font_outline50, colorBlack);
+            SDL_QueryTexture(endTextTextures[8].texture, NULL, NULL, &endTextTextures[8].rect.w, &endTextTextures[8].rect.h);
         }
-        SDL_RenderCopy(rend, endTextTextures[6].texture, NULL, &endTextTextures[6].rect);
+        SDL_RenderCopy(rend, endTextTextures[8].texture, NULL, &endTextTextures[8].rect);
 
         //potwierdź
-        endTextTextures[5].rect.x = WINDOW_WIDTH/2-endTextTextures[5].rect.w/2;
-        endTextTextures[5].rect.y = WINDOW_HEIGHT-130;
-        SDL_RenderCopy(rend, endTextTextures[5].texture, NULL, &endTextTextures[5].rect);
+        endTextTextures[9].rect.x = WINDOW_WIDTH/2-endTextTextures[9].rect.w/2;
+        endTextTextures[9].rect.y = endTextTextures[8].rect.y+90;
+        SDL_RenderCopy(rend, endTextTextures[9].texture, NULL, &endTextTextures[9].rect);
 
 
         break;

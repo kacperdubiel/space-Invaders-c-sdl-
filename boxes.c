@@ -36,11 +36,12 @@ void boxInit(int type, float dropChance){
 void allBoxesInit(){
     // LISTA SKRZYNEK
     //     TYPE,  DCHANCE
-    boxInit(0,    2*60);
-    boxInit(1,    2*120);
-    boxInit(2,    2*90);
-    boxInit(3,    2*120);
-    boxInit(4,    2*100);
+    boxInit(0,    120);
+    boxInit(1,    200);
+    boxInit(2,    180);
+    boxInit(3,    200);
+    boxInit(4,    200);
+    boxInit(5,    80);
 }
 
 void boxCollisionUpdate(){

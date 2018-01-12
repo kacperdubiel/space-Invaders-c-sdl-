@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "player.h"
+#include "init.h"
 
 Enemy *enemies[MAX_ENEMIES];
 EnemyType enemyTypes[ENEMY_TYPES];
@@ -21,14 +23,15 @@ void enemyInit(int type, int life, int damage, int score, float x_vel, float y_v
 
 void allEnemyInit(){
     // LISTA WROGÓW
-    //        TYPE, LIFE, DAMAGE, SCORE, X_VEL, Y_VEL, BTYPE, BCHANCE, CDN, COLLBOXES, DROPMULT
-    enemyInit(0,    1,    1,      0,     1,     1,     0,     0,       0,   2,         1);   // szary (template)
-    enemyInit(1,    1,    1,      15,    0.7,   25,    1,     5,       500, 2,         0.8); // czerwony
-    enemyInit(2,    2,    1,      30,    0.7,   25,    2,     6,       500, 2,         1.1); // żółty
-    enemyInit(3,    3,    1,      45,    0.7,   25,    3,     7,       300, 2,         1.6); // zielony
-    enemyInit(4,    4,    1,      55,    1.7,   0,     4,     20,      50,  2,         1.7); // niebieski jasny
-    enemyInit(5,    5,    1,      70,    0.7,   25,    5,     9,       300, 2,         2.0); // różowy
-    enemyInit(6,    6,    1,      90,    0.7,   25,    6,     10,      300, 2,         2.3); // niebieski
+    //        TYPE, LIFE, DAMAGE,   SCORE, X_VEL, Y_VEL, BTYPE, BCHANCE, CDN,  COLLBOXES, DROPMULT
+    enemyInit(0,    1,    1,        0,     1,     1,     0,     0,       0,    2,         1);   // szary (template)
+    enemyInit(1,    1,    1,        15,    0.7,   25,    1,     5,       500,  2,         0.8); // czerwony
+    enemyInit(2,    2,    1,        30,    0.7,   25,    2,     6,       500,  2,         1.1); // żółty
+    enemyInit(3,    3,    1,        45,    0.7,   25,    3,     7,       300,  2,         1.6); // zielony
+    enemyInit(4,    4,    1,        55,    1.7,   0,     4,     20,      50,   2,         1.7); // niebieski jasny
+    enemyInit(5,    5,    1,        70,    0.7,   25,    5,     9,       300,  2,         2.0); // różowy
+    enemyInit(6,    6,    1,        90,    0.7,   25,    6,     10,      300,  2,         2.3); // niebieski
+    enemyInit(7,    90,   MAX_LIFE, 1000,  0.7,   0,     8,     1000,    70,   5,         0);   // boss
 }
 
 void addEnemy(int enemyType, float x, float y, float x_vel, float y_vel, int life){
@@ -102,10 +105,16 @@ void addEnemies(int stage){
                                              {0,0,0,0,0,0,0,0,0,0}
                                             },
                                             { //fala 7
-                                             {6,5,0,0,1,0,0,5,6,0},
+                                             {6,5,0,1,1,1,0,5,6,0},
                                              {0,6,5,0,0,0,5,6,0,0},
                                              {0,0,6,5,0,5,6,0,0,0},
                                              {0,0,0,6,5,6,0,0,0,0}
+                                            },
+                                            { //fala 8
+                                             {0,0,0,0,0,0,0,0,0,0},
+                                             {0,0,0,0,7,0,0,0,0,0},
+                                             {0,0,0,0,0,0,0,0,0,0},
+                                             {0,0,0,0,0,0,0,0,0,0}
                                             }
                                            };
 
@@ -130,15 +139,44 @@ void addEnemies(int stage){
 void enemyCollisionUpdate(){
     for(int i=0; i<MAX_ENEMIES;i++){
         if(enemies[i]){
-            enemies[i]->collisionBoxes[0].x = enemies[i]->x;
-            enemies[i]->collisionBoxes[0].y = enemies[i]->y;
-            enemies[i]->collisionBoxes[0].w = 60;
-            enemies[i]->collisionBoxes[0].h = 39;
+            int type = enemies[i]->enemyType;
 
-            enemies[i]->collisionBoxes[1].x = enemies[i]->x+21;
-            enemies[i]->collisionBoxes[1].y = enemies[i]->y+34;
-            enemies[i]->collisionBoxes[1].w = 19;
-            enemies[i]->collisionBoxes[1].h = 30;
+            if(type != 7){
+                enemies[i]->collisionBoxes[0].x = enemies[i]->x;
+                enemies[i]->collisionBoxes[0].y = enemies[i]->y;
+                enemies[i]->collisionBoxes[0].w = 60;
+                enemies[i]->collisionBoxes[0].h = 39;
+
+                enemies[i]->collisionBoxes[1].x = enemies[i]->x+21;
+                enemies[i]->collisionBoxes[1].y = enemies[i]->y+34;
+                enemies[i]->collisionBoxes[1].w = 19;
+                enemies[i]->collisionBoxes[1].h = 30;
+            }else{
+                enemies[i]->collisionBoxes[0].x = enemies[i]->x+2;
+                enemies[i]->collisionBoxes[0].y = enemies[i]->y;
+                enemies[i]->collisionBoxes[0].w = 163;
+                enemies[i]->collisionBoxes[0].h = 26;
+
+                enemies[i]->collisionBoxes[1].x = enemies[i]->x+12;
+                enemies[i]->collisionBoxes[1].y = enemies[i]->y+28;
+                enemies[i]->collisionBoxes[1].w = 145;
+                enemies[i]->collisionBoxes[1].h = 19;
+
+                enemies[i]->collisionBoxes[2].x = enemies[i]->x+20;
+                enemies[i]->collisionBoxes[2].y = enemies[i]->y+42;
+                enemies[i]->collisionBoxes[2].w = 129;
+                enemies[i]->collisionBoxes[2].h = 30;
+
+                enemies[i]->collisionBoxes[3].x = enemies[i]->x+69;
+                enemies[i]->collisionBoxes[3].y = enemies[i]->y+71;
+                enemies[i]->collisionBoxes[3].w = 32;
+                enemies[i]->collisionBoxes[3].h = 38;
+
+                enemies[i]->collisionBoxes[4].x = enemies[i]->x+76;
+                enemies[i]->collisionBoxes[4].y = enemies[i]->y+105;
+                enemies[i]->collisionBoxes[4].w = 16;
+                enemies[i]->collisionBoxes[4].h = 21;
+            }
         }
     }
 }

@@ -1,11 +1,11 @@
 #ifndef TEXTURES_H_INCLUDED
 #define TEXTURES_H_INCLUDED
 
-#define MAX_COLLISION_BOXES 10
+#define MAX_COLLISION_BOXES 8
 #define HUD_HEIGHT 45
 #define MAX_ANIMATIONS 100
 #define ANIMATION_TYPES 5
-#define BG_SCROLLING_SPEED_INCREASE 4/LAST_STAGE
+#define BG_SCROLLING_SPEED_INCREASE 5/LAST_STAGE
 extern float bg_scrolling_speed;
 
 #include <SDL.h>
@@ -39,7 +39,7 @@ extern Texture menuTextTextures[4];
 extern Texture pauseTextTextures[3];
 extern Texture rankingTextTextures[4+RANKING_TOP];
 extern Texture cooldownsTextTextures[BOX_TYPES];
-extern Texture endTextTextures[7];
+extern Texture endTextTextures[10];
 extern Texture hotkeysTextTextures[3];
 extern Texture iconTextures[3];
 extern Texture spellsCdTextures[3];
@@ -47,6 +47,7 @@ extern Texture spellsCdTextures[3];
 extern int heartX;
 
 //czcionka
+TTF_Font* font85, *font_outline85;
 TTF_Font* font72, *font_outline72;
 TTF_Font* font60, *font_outline60;
 TTF_Font* font50, *font_outline50;
@@ -67,11 +68,13 @@ extern SDL_Texture* playerTexture, *playerBulletTexture;
 extern SDL_Texture* animationTexture;
 extern SDL_Texture* textTexture;
 extern SDL_Texture* arrowsTexture, *qTexture, *wTexture, *eTexture;
+extern SDL_Texture* lifebarBackground, *lifebar, *lifebarPercent;
 
 extern SDL_Rect bgRect, hudRect1, hudRect2, heartRect, scoreTextRect;
 extern SDL_Rect playerRect, playerBulletRect, animationRect, frame;
 extern SDL_Rect boxRect, textRect;
 extern SDL_Rect arrowsRect, keyRect;
+extern SDL_Rect lifebarBackgroundRect, lifebarRect, lifebarPercentRect;
 
 void surfaceError();
 SDL_Texture* createTexture(char *path);

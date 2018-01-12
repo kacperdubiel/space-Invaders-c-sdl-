@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "enemy.h"
 
 int unsigned frames_counter = 0;
 int unsigned current_time = 0;
@@ -13,6 +14,14 @@ int selectedOption = 1;
 
 int deadTimer = DEAD_TIMER;
 int gameEnd = 0;
+
+int bossFlag = 0;
+int bossLifeFlag = 0;
+int bossBoxFlag = 0;
+int bossPointsTimer = BOSS_BONUS_POINTS_TIME;
+
+int lifeBonusPoints = 0;
+int bossBonusPoints = 0;
 
 SDL_Window* win;
 SDL_Renderer* rend;

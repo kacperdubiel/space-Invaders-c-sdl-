@@ -30,7 +30,7 @@ void addPlayerBasicStats(){
     player.attCooldown = player.attack_speed;
     player.freezeCooldown = 3; //czas do użycia zamrożenia na początku gry
     player.freezeTime = 0;
-    player.bombs = 555;
+    player.bombs = 1;
     player.bombsCooldown = 10;
     for(int i=0; i<BOX_TYPES; i++)
         player.timers[i] = 0;

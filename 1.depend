@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1515767408 source:c:\users\kacpe\desktop\c\sdl\1\main.c
+1515795559 source:c:\users\kacpe\desktop\c\sdl\1\main.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -355,22 +355,23 @@
 	"begin_code.h"
 	"close_code.h"
 
-1515678380 c:\users\kacpe\desktop\c\sdl\1\init.h
+1515795602 c:\users\kacpe\desktop\c\sdl\1\init.h
 	<SDL.h>
 
-1515639675 source:c:\users\kacpe\desktop\c\sdl\1\init.c
+1515791655 source:c:\users\kacpe\desktop\c\sdl\1\init.c
 	"init.h"
 	<stdio.h>
 	<SDL.h>
 	<SDL_ttf.h>
+	"enemy.h"
 
-1515704342 c:\users\kacpe\desktop\c\sdl\1\textures.h
+1515793707 c:\users\kacpe\desktop\c\sdl\1\textures.h
 	<SDL.h>
 	<SDL_ttf.h>
 	"ranking.h"
 	"boxes.h"
 
-1515764152 source:c:\users\kacpe\desktop\c\sdl\1\textures.c
+1515795560 source:c:\users\kacpe\desktop\c\sdl\1\textures.c
 	"textures.h"
 	<stdio.h>
 	<stdlib.h>
@@ -383,7 +384,7 @@
 	"enemy.h"
 	"bullet.h"
 
-1515762800 c:\users\kacpe\desktop\c\sdl\1\player.h
+1515790281 c:\users\kacpe\desktop\c\sdl\1\player.h
 	<SDL.h>
 	"textures.h"
 	"boxes.h"
@@ -395,37 +396,39 @@
 1514081519 c:\users\kacpe\desktop\c\sdl\1\enemies.h
 	<SDL.h>
 
-1515767305 source:c:\users\kacpe\desktop\c\sdl\1\enemy.c
+1515784569 source:c:\users\kacpe\desktop\c\sdl\1\enemy.c
 	"enemy.h"
 	<stdio.h>
 	<stdlib.h>
+	"player.h"
+	"init.h"
 
-1515678380 c:\users\kacpe\desktop\c\sdl\1\enemy.h
+1515791102 c:\users\kacpe\desktop\c\sdl\1\enemy.h
 	<SDL.h>
 	"textures.h"
 
-1515761108 source:c:\users\kacpe\desktop\c\sdl\1\bullet.c
+1515784569 source:c:\users\kacpe\desktop\c\sdl\1\bullet.c
 	"bullet.h"
 	<stdlib.h>
 	<stdio.h>
 	"player.h"
 
-1515707120 c:\users\kacpe\desktop\c\sdl\1\bullet.h
+1515785353 c:\users\kacpe\desktop\c\sdl\1\bullet.h
 	<SDL.h>
 	"textures.h"
 
-1515761701 source:c:\users\kacpe\desktop\c\sdl\1\player.c
+1515795622 source:c:\users\kacpe\desktop\c\sdl\1\player.c
 	"player.h"
 	"init.h"
 	"textures.h"
 	<string.h>
 
-1515695188 source:c:\users\kacpe\desktop\c\sdl\1\boxes.c
+1515796139 source:c:\users\kacpe\desktop\c\sdl\1\boxes.c
 	"boxes.h"
 	<SDL.h>
 	<stdlib.h>
 
-1515707120 c:\users\kacpe\desktop\c\sdl\1\boxes.h
+1515785353 c:\users\kacpe\desktop\c\sdl\1\boxes.h
 	<SDL.h>
 	"textures.h"
 

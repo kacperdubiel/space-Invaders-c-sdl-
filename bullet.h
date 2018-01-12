@@ -2,8 +2,8 @@
 #define BULLET_H_INCLUDED
 
 #define SINUS_ACCURACY (0.1) //dokładność sinusoidy (im wyższa liczba tym większa częstotliwość drgań)
-#define MAX_BULLETS 500
-#define BULLET_TYPES 8
+#define MAX_BULLETS  500
+#define BULLET_TYPES 10
 
 #include <SDL.h>
 #include "textures.h"
