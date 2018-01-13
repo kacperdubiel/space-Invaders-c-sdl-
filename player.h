@@ -3,7 +3,7 @@
 
 #define FREEZE_COOLDOWN   30 //w sekundach
 #define FREEZE_DURATION   5  //w sekundach
-#define BOMBS_COOLDOWN    10 //w klatkach
+#define BOMBS_COOLDOWN    13 //w klatkach
 
 #define BONUS_DURATION    10 //w sekundach
 #define MAX_LIFE          10

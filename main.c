@@ -102,7 +102,7 @@ void onExit(){
     SDL_DestroyTexture(pauseTextTextures[1].texture);
     SDL_DestroyTexture(pauseTextTextures[2].texture);
     SDL_DestroyTexture(animationTexture);
-    SDL_DestroyTexture(iconTextures[1].selected_texture);
+    SDL_DestroyTexture(iconTextures[1].second_texture);
     SDL_DestroyTexture(bgTexture);
     SDL_DestroyTexture(hudTexture);
     SDL_DestroyTexture(heartTexture);
@@ -148,6 +148,14 @@ void renderMenu(){
                     deadTimer = DEAD_TIMER;
                     gameEnd = 0;
                     frames_counter = 0;
+                    //wyzerowanie flag
+                    bossFlag = 0;
+                    bossLifeFlag = 0;
+                    bossBoxFlag = 0;
+                    bossPointsTimer = BOSS_BONUS_POINTS_TIME;
+                    //wyzerowanie dodatkowych punktów
+                    lifeBonusPoints = 0;
+                    bossBonusPoints = 0;
                     //załadowanie podstawowych wartości gracza
                     addPlayerBasicStats();
                     bg_scrolling_speed = 2;
@@ -156,6 +164,10 @@ void renderMenu(){
                     break;
                 case 2:
                     programStatus = 3;
+                    if(!instructionTexturesCreated){
+                        createInstructionTextures();
+                        instructionTexturesCreated = 1;
+                    }
                     break;
                 case 3:
                     createRankingTextures();
@@ -173,7 +185,6 @@ void renderMenu(){
         }
     }
 
-
     //rozpocznij
     if(menuTextTextures[0].rect.x < WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2)
         menuTextTextures[0].rect.x+=13;
@@ -181,7 +192,7 @@ void renderMenu(){
         menuTextTextures[0].rect.x = WINDOW_WIDTH/2-menuTextTextures[0].rect.w/2;
 
     if(selectedOption == 1)
-        SDL_RenderCopy(rend, menuTextTextures[0].selected_texture, NULL, &menuTextTextures[0].rect);
+        SDL_RenderCopy(rend, menuTextTextures[0].second_texture, NULL, &menuTextTextures[0].rect);
     else
         SDL_RenderCopy(rend, menuTextTextures[0].texture, NULL, &menuTextTextures[0].rect);
 
@@ -192,7 +203,7 @@ void renderMenu(){
         menuTextTextures[1].rect.x = WINDOW_WIDTH/2-menuTextTextures[1].rect.w/2;
 
     if(selectedOption == 2)
-        SDL_RenderCopy(rend, menuTextTextures[1].selected_texture, NULL, &menuTextTextures[1].rect);
+        SDL_RenderCopy(rend, menuTextTextures[1].second_texture, NULL, &menuTextTextures[1].rect);
     else
         SDL_RenderCopy(rend, menuTextTextures[1].texture, NULL, &menuTextTextures[1].rect);
 
@@ -203,7 +214,7 @@ void renderMenu(){
         menuTextTextures[2].rect.x = WINDOW_WIDTH/2-menuTextTextures[2].rect.w/2;
 
     if(selectedOption == 3)
-        SDL_RenderCopy(rend, menuTextTextures[2].selected_texture, NULL, &menuTextTextures[2].rect);
+        SDL_RenderCopy(rend, menuTextTextures[2].second_texture, NULL, &menuTextTextures[2].rect);
     else
         SDL_RenderCopy(rend, menuTextTextures[2].texture, NULL, &menuTextTextures[2].rect);
 
@@ -214,7 +225,7 @@ void renderMenu(){
         menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
 
     if(selectedOption == 4)
-        SDL_RenderCopy(rend, menuTextTextures[3].selected_texture, NULL, &menuTextTextures[3].rect);
+        SDL_RenderCopy(rend, menuTextTextures[3].second_texture, NULL, &menuTextTextures[3].rect);
     else
         SDL_RenderCopy(rend, menuTextTextures[3].texture, NULL, &menuTextTextures[3].rect);
 }
@@ -324,6 +335,9 @@ void renderGame(){
 
     if(gameEnd){
         deadTimer--;
+        if(bg_scrolling_speed >= 0.5)
+            bg_scrolling_speed -= 0.05;
+
         if(deadTimer<=0){
             if(player.life>5)
                 lifeBonusPoints = player.score*(player.life-5)*0.05;
@@ -331,7 +345,7 @@ void renderGame(){
                 lifeBonusPoints = 0;
 
             if(player.life>0)
-                bossBonusPoints = enemyTypes[7].score*((float)bossPointsTimer/BOSS_BONUS_POINTS_TIME);
+                bossBonusPoints = 2.5*enemyTypes[7].score*((float)bossPointsTimer/BOSS_BONUS_POINTS_TIME);
 
             if(player.score+lifeBonusPoints+bossBonusPoints>ranking[RANKING_TOP-1].score){
                 programStatus = 7;
@@ -342,6 +356,7 @@ void renderGame(){
             }
             createEndTextures();
             player.score += lifeBonusPoints+bossBonusPoints;
+
         }
     }
 
@@ -426,7 +441,7 @@ void renderGame(){
         player.y-=3;
         player.x = (WINDOW_WIDTH - playerRect.w) / 2;
         player.attCooldown = 0;
-        player.bombsCooldown = BOMBS_COOLDOWN;
+        player.bombsCooldown = 150;
         scoreFlag = 1;
         bombsFlag = 1;
     }
@@ -487,8 +502,8 @@ void renderGame(){
             bulletTypes[bType].rect.y = bullets[i]->y;
             SDL_RenderCopy(rend, bulletTypes[bType].texture, NULL, &bulletTypes[bType].rect);
 
-            bullets[i]->x = bullets[i]->x_start + sin(bullets[i]->y_helper)*bullets[i]->bullet_amplitude;
-            bullets[i]->y_helper += SINUS_ACCURACY;
+            bullets[i]->x = bullets[i]->x_start + sin(bullets[i]->y_vel)*bullets[i]->bullet_amplitude;
+            bullets[i]->y_vel += SINUS_ACCURACY;
             bullets[i]->y -= bullets[i]->bullet_speed;
 
             if(bullets[i]->y<=0){
@@ -532,19 +547,16 @@ void renderGame(){
         }
     }
 
-    //stworzenie wrogów gdy plansza jest pusta
+    //sprawdzenie czy plansza jest pusta
     int stageCleared = 1;
     for(int i=0;i<MAX_ENEMIES;i++){
-        if(enemies[i]!=NULL){
-            stageCleared = 0;
-        }
+        if(enemies[i]!=NULL) stageCleared = 0;
     }
 
     // <<-- KOLEJNE FALE POTWORÓW -->>
     if(stageCleared && player.stage<=LAST_STAGE){
         player.stage++;
         if(player.stage>LAST_STAGE){
-            deadTimer = 120;
             gameEnd = 1;
         }else{
             printf(">> Stage %d! <<\n",player.stage);
@@ -574,17 +586,19 @@ void renderGame(){
                     addAnimation(player.x+playerRect.w/2, player.y+playerRect.h/2, rand()%360, 0);
                 addAnimation(heartRect.x+heartRect.w/2, heartRect.y+heartRect.h/2, rand()%360, 1);
                 if(type!=7)
-                removeEnemy(i);
+                    removeEnemy(i);
                 continue;
             }else
                 SDL_RenderCopy(rend, enemyTypes[type].texture, NULL, &enemyTypes[type].rect);
 
             if(enemies[0] && enemies[0]->y<60){
                 for(int j=0;j<MAX_ENEMIES;j++){
-                    if(enemies[j] && !enemies[j]->freeze && enemies[j]->enemyType != 7) enemies[j]->y+=0.3;
-                    else if(enemies[j] && !enemies[j]->freeze && enemies[j]->enemyType == 7){
-                        enemies[j]->y+=2;
-                        bossLifeFlag++;
+                    if(enemies[j] && !enemies[j]->freeze){
+                        enemies[j]->y+=0.2;
+                        if(enemies[j]->enemyType == 7 || enemies[j]->enemyType == 8){
+                            enemies[j]->y+=0.5;
+                            bossLifeFlag++;
+                        }
                     }
                 }
             }else{
@@ -594,10 +608,18 @@ void renderGame(){
                         roll = rand();
                     roll=roll%2000+1;
                     if(roll<=enemyTypes[type].bulletChance){
-                        if(type!=7)
-                            addBullet(enemies[i]->x+enemyTypes[type].rect.w/2, enemies[i]->y+enemyTypes[type].rect.h-5, enemyTypes[type].bulletType);
-                        else
+                        switch(type){
+                        case 7:
                             addBullet(enemies[i]->x+enemyTypes[type].rect.w/2-5, enemies[i]->y+enemyTypes[type].rect.h-50, enemyTypes[type].bulletType);
+                            break;
+                        case 8:
+                            addBullet(enemies[i]->x+enemyTypes[type].rect.w/2-20, enemies[i]->y+enemyTypes[type].rect.h-20, enemyTypes[type].bulletType);
+                            break;
+                        default:
+                            addBullet(enemies[i]->x+enemyTypes[type].rect.w/2, enemies[i]->y+enemyTypes[type].rect.h-5, enemyTypes[type].bulletType);
+                            break;
+                        }
+
                         enemies[i]->cooldown = enemyTypes[type].cooldownTime;
                     }
                 }
@@ -631,19 +653,26 @@ void renderGame(){
             bulletTypes[bType].rect.y = bullets[i]->y;
             SDL_RenderCopyEx(rend,bulletTypes[bType].texture,NULL,&bulletTypes[bType].rect,bullets[i]->bullet_angle,NULL,SDL_FLIP_NONE);
 
+
             if(!bullets[i]->freeze || bType == 7)
                 bullets[i]->bullet_angle += bulletTypes[bType].spin_speed;
             if(bullets[i]->bullet_angle>=360){
                 bullets[i]->bullet_angle-=360;
             }
-            if(!bullets[i]->freeze || bType == 7){
-                bullets[i]->x = bullets[i]->x_start - sin(bullets[i]->y_helper)*bullets[i]->bullet_amplitude;
-                bullets[i]->y_helper += SINUS_ACCURACY;
-                bullets[i]->y += bullets[i]->bullet_speed;
-            }
             if(bullets[i]->y>=WINDOW_HEIGHT){
-                removeBullet(i);
-                continue;
+                    removeBullet(i);
+                    continue;
+            }
+
+            if(!bullets[i]->freeze || bType == 7){
+                if(bType == 10){
+                    bullets[i]->x += bullets[i]->x_vel;
+                    bullets[i]->y += bullets[i]->y_vel;
+                }else{
+                    bullets[i]->x = bullets[i]->x_start - sin(bullets[i]->y_vel)*bullets[i]->bullet_amplitude;
+                    bullets[i]->y_vel += SINUS_ACCURACY;
+                    bullets[i]->y += bullets[i]->bullet_speed;
+                }
             }
 
             collisionUpdate();
@@ -715,7 +744,7 @@ void renderGame(){
     iconTextures[0].rect.x = WINDOW_WIDTH-3*iconTextures[0].rect.w-3*10;
     iconTextures[0].rect.y = WINDOW_HEIGHT-iconTextures[0].rect.h-5;
     if(player.attCooldown>=player.attack_speed)
-        SDL_RenderCopy(rend, iconTextures[0].selected_texture, NULL, &iconTextures[0].rect);
+        SDL_RenderCopy(rend, iconTextures[0].second_texture, NULL, &iconTextures[0].rect);
     else
         SDL_RenderCopy(rend, iconTextures[0].texture, NULL, &iconTextures[0].rect);
 
@@ -727,7 +756,7 @@ void renderGame(){
     iconTextures[1].rect.x = iconTextures[0].rect.x+iconTextures[0].rect.w+10;
     iconTextures[1].rect.y = iconTextures[0].rect.y;
     if(player.freezeCooldown == 0){
-        SDL_RenderCopy(rend, iconTextures[1].selected_texture, NULL, &iconTextures[1].rect);
+        SDL_RenderCopy(rend, iconTextures[1].second_texture, NULL, &iconTextures[1].rect);
         hotkeysTextTextures[1].rect.x = iconTextures[1].rect.x+iconTextures[1].rect.w/2-hotkeysTextTextures[1].rect.w/2;
         hotkeysTextTextures[1].rect.y = iconTextures[1].rect.y+iconTextures[1].rect.h-hotkeysTextTextures[1].rect.h;
         SDL_RenderCopy(rend, hotkeysTextTextures[1].texture, NULL, &hotkeysTextTextures[1].rect);
@@ -753,7 +782,7 @@ void renderGame(){
     iconTextures[2].rect.x = iconTextures[1].rect.x+iconTextures[1].rect.w+10;
     iconTextures[2].rect.y = iconTextures[1].rect.y;
     if(player.bombs>0)
-        SDL_RenderCopy(rend, iconTextures[2].selected_texture, NULL, &iconTextures[2].rect);
+        SDL_RenderCopy(rend, iconTextures[2].second_texture, NULL, &iconTextures[2].rect);
     else
         SDL_RenderCopy(rend, iconTextures[2].texture, NULL, &iconTextures[2].rect);
 
@@ -908,114 +937,120 @@ void renderInstruction(){
         }
     }
 
-    //strzałki
-    arrowsRect.x = 30;
-    arrowsRect.y = 160;
-    SDL_RenderCopy(rend, arrowsTexture, NULL, &arrowsRect);
+    //LEWA STRONA
+    //ruch
+    SDL_QueryTexture(instructionTextures[0].second_texture, NULL, NULL, &instructionTextures[0].rect.w, &instructionTextures[0].rect.h);
+    instructionTextures[0].rect.x = 40;
+    instructionTextures[0].rect.y = 120;
+    SDL_RenderCopy(rend, instructionTextures[0].second_texture, NULL, &instructionTextures[0].rect);
 
-    textTexture = createTextTexture(font25, "RUCH GRACZA", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.x = arrowsRect.x+arrowsRect.w+20;
-    textRect.y = arrowsRect.y+arrowsRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
+    instructionTextures[0].rect.x += instructionTextures[0].rect.w+25;
+    instructionTextures[0].rect.y += instructionTextures[0].rect.h/2-20;
+    SDL_QueryTexture(instructionTextures[0].texture, NULL, NULL, &instructionTextures[0].rect.w, &instructionTextures[0].rect.h);
+    SDL_RenderCopy(rend, instructionTextures[0].texture, NULL, &instructionTextures[0].rect);
 
     //Q
-    SDL_QueryTexture(qTexture, NULL, NULL, &keyRect.w, &keyRect.h);
-    keyRect.x = arrowsRect.x+arrowsRect.w/2-keyRect.w/2;
-    keyRect.y = arrowsRect.y+arrowsRect.h+30;
-    SDL_RenderCopy(rend, qTexture, NULL, &keyRect);
+    SDL_QueryTexture(instructionTextures[1].second_texture, NULL, NULL, &instructionTextures[1].rect.w, &instructionTextures[1].rect.h);
+    instructionTextures[1].rect.x = 105;
+    instructionTextures[1].rect.y = 250;
+    SDL_RenderCopy(rend, instructionTextures[1].second_texture, NULL, &instructionTextures[1].rect);
 
-    textTexture = createTextTexture(font25, "ATAK", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.y = keyRect.y+keyRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    instructionTextures[1].rect.x += instructionTextures[1].rect.w+85;
+    instructionTextures[1].rect.y += instructionTextures[1].rect.h/2-20;
+    SDL_QueryTexture(instructionTextures[1].texture, NULL, NULL, &instructionTextures[1].rect.w, &instructionTextures[1].rect.h);
+    SDL_RenderCopy(rend, instructionTextures[1].texture, NULL, &instructionTextures[1].rect);
 
     //W
-    SDL_QueryTexture(wTexture, NULL, NULL, &keyRect.w, &keyRect.h);
-    keyRect.y += keyRect.h+30;
-    SDL_RenderCopy(rend, wTexture, NULL, &keyRect);
+    SDL_QueryTexture(instructionTextures[2].second_texture, NULL, NULL, &instructionTextures[2].rect.w, &instructionTextures[2].rect.h);
+    instructionTextures[2].rect.x = 105;
+    instructionTextures[2].rect.y = 350;
+    SDL_RenderCopy(rend, instructionTextures[2].second_texture, NULL, &instructionTextures[2].rect);
 
-    textTexture = createTextTexture(font25, "ZAMRAŻANiE", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.y += keyRect.h+30;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    instructionTextures[2].rect.x += instructionTextures[2].rect.w+85;
+    instructionTextures[2].rect.y += instructionTextures[2].rect.h/2-20;
+    SDL_QueryTexture(instructionTextures[2].texture, NULL, NULL, &instructionTextures[2].rect.w, &instructionTextures[2].rect.h);
+    SDL_RenderCopy(rend, instructionTextures[2].texture, NULL, &instructionTextures[2].rect);
 
     //E
-    SDL_QueryTexture(eTexture, NULL, NULL, &keyRect.w, &keyRect.h);
-    keyRect.y += keyRect.h+30;
-    SDL_RenderCopy(rend, eTexture, NULL, &keyRect);
+    SDL_QueryTexture(instructionTextures[3].second_texture, NULL, NULL, &instructionTextures[3].rect.w, &instructionTextures[3].rect.h);
+    instructionTextures[3].rect.x = 105;
+    instructionTextures[3].rect.y = 450;
+    SDL_RenderCopy(rend, instructionTextures[3].second_texture, NULL, &instructionTextures[3].rect);
 
-    textTexture = createTextTexture(font25, "BOMBA", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.y += keyRect.h+30;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    instructionTextures[3].rect.x += instructionTextures[3].rect.w+85;
+    instructionTextures[3].rect.y += instructionTextures[3].rect.h/2-20;
+    SDL_QueryTexture(instructionTextures[3].texture, NULL, NULL, &instructionTextures[3].rect.w, &instructionTextures[3].rect.h);
+    SDL_RenderCopy(rend, instructionTextures[3].texture, NULL, &instructionTextures[3].rect);
 
+    //PRAWA STRONA
+    //dodatkowe życie
+    SDL_QueryTexture(boxTypes[0].texture, NULL, NULL, &boxRect2.w, &boxRect2.h);
+    boxRect2.w *= 1.5;
+    boxRect2.h *= 1.5;
+    boxRect2.x = 530;
+    boxRect2.y = 100;
+    SDL_RenderCopy(rend, boxTypes[0].texture, NULL, &boxRect2);
 
-    //życie
-    SDL_Rect instructionIconRect = {510, 120, 60, 60};
-    SDL_RenderCopy(rend, boxTypes[0].texture, NULL, &instructionIconRect);
+    SDL_QueryTexture(instructionTextures[4].texture, NULL, NULL, &instructionTextures[4].rect.w, &instructionTextures[4].rect.h);
+    instructionTextures[4].rect.x = 600;
+    instructionTextures[4].rect.y = 105;
+    SDL_RenderCopy(rend, instructionTextures[4].texture, NULL, &instructionTextures[4].rect);
 
-    textTexture = createTextTexture(font25, "DODATKOWE ŻYCiE", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.x = instructionIconRect.x+instructionIconRect.w+20;
-    textRect.y = instructionIconRect.y+instructionIconRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    //ładunek bomby
+    boxRect2.y += boxRect2.h+20;
+    SDL_RenderCopy(rend, boxTypes[5].texture, NULL, &boxRect2);
+
+    SDL_QueryTexture(instructionTextures[5].texture, NULL, NULL, &instructionTextures[5].rect.w, &instructionTextures[5].rect.h);
+    instructionTextures[5].rect.x = instructionTextures[4].rect.x;
+    instructionTextures[5].rect.y = instructionTextures[4].rect.y+boxRect2.h+20;
+    SDL_RenderCopy(rend, instructionTextures[5].texture, NULL, &instructionTextures[5].rect);
 
     //bonusy
-    sprintf(textBuffer, "BONUSY (na %d Sekund):", BONUS_DURATION);
-    textTexture = createTextTexture(font25, textBuffer, colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.x = instructionIconRect.x;
-    textRect.y = instructionIconRect.y+instructionIconRect.h+50;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    SDL_QueryTexture(instructionTextures[6].texture, NULL, NULL, &instructionTextures[6].rect.w, &instructionTextures[6].rect.h);
+    instructionTextures[6].rect.x = boxRect2.x;
+    instructionTextures[6].rect.y = instructionTextures[5].rect.y+80;
+    SDL_RenderCopy(rend, instructionTextures[6].texture, NULL, &instructionTextures[6].rect);
 
     //prędkość ataku
-    instructionIconRect.y = textRect.y+textRect.h+20;
-    SDL_RenderCopy(rend, boxTypes[1].texture, NULL, &instructionIconRect);
+    boxRect2.y += boxRect2.h+95;
+    SDL_RenderCopy(rend, boxTypes[1].texture, NULL, &boxRect2);
 
-    textTexture = createTextTexture(font25, "PRĘDKOŚĆ ATAKU x2", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.x = instructionIconRect.x+instructionIconRect.w+20;
-    textRect.y = instructionIconRect.y+instructionIconRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    SDL_QueryTexture(instructionTextures[7].texture, NULL, NULL, &instructionTextures[7].rect.w, &instructionTextures[7].rect.h);
+    instructionTextures[7].rect.x = instructionTextures[5].rect.x;
+    instructionTextures[7].rect.y = instructionTextures[6].rect.y+boxRect2.h+13;
+    SDL_RenderCopy(rend, instructionTextures[7].texture, NULL, &instructionTextures[7].rect);
 
     //obrażenia
-    instructionIconRect.y += instructionIconRect.h+20;
-    SDL_RenderCopy(rend, boxTypes[2].texture, NULL, &instructionIconRect);
+    boxRect2.y += boxRect2.h+20;
+    SDL_RenderCopy(rend, boxTypes[2].texture, NULL, &boxRect2);
 
-    textTexture = createTextTexture(font25, "OBRAŻENiA x3", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.x = instructionIconRect.x+instructionIconRect.w+20;
-    textRect.y = instructionIconRect.y+instructionIconRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
-
-    //usunięcie amplitudy
-    instructionIconRect.y += instructionIconRect.h+20;
-    SDL_RenderCopy(rend, boxTypes[3].texture, NULL, &instructionIconRect);
-
-    textTexture = createTextTexture(font25, "PROSTY TOR POCiSKU", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.x = instructionIconRect.x+instructionIconRect.w+20;
-    textRect.y = instructionIconRect.y+instructionIconRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    SDL_QueryTexture(instructionTextures[8].texture, NULL, NULL, &instructionTextures[8].rect.w, &instructionTextures[8].rect.h);
+    instructionTextures[8].rect.x = instructionTextures[7].rect.x;
+    instructionTextures[8].rect.y = instructionTextures[7].rect.y+boxRect2.h+22;
+    SDL_RenderCopy(rend, instructionTextures[8].texture, NULL, &instructionTextures[8].rect);
 
     //obrażenia
-    instructionIconRect.y += instructionIconRect.h+20;
-    SDL_RenderCopy(rend, boxTypes[4].texture, NULL, &instructionIconRect);
+    boxRect2.y += boxRect2.h+20;
+    SDL_RenderCopy(rend, boxTypes[3].texture, NULL, &boxRect2);
 
-    textTexture = createTextTexture(font25, "PRĘDKOŚĆ POCiSKÓW x4", colorWhite, 1, font_outline25, colorBlack);
-    SDL_QueryTexture(textTexture, NULL, NULL, &textRect.w, &textRect.h);
-    textRect.y = instructionIconRect.y+instructionIconRect.h/2-textRect.h/2;
-    SDL_RenderCopy(rend, textTexture, NULL, &textRect);
-    SDL_DestroyTexture(textTexture);
+    SDL_QueryTexture(instructionTextures[9].texture, NULL, NULL, &instructionTextures[9].rect.w, &instructionTextures[9].rect.h);
+    instructionTextures[9].rect.x = instructionTextures[8].rect.x;
+    instructionTextures[9].rect.y = instructionTextures[8].rect.y+boxRect2.h+18;
+    SDL_RenderCopy(rend, instructionTextures[9].texture, NULL, &instructionTextures[9].rect);
+
+    //obrażenia
+    boxRect2.y += boxRect2.h+20;
+    SDL_RenderCopy(rend, boxTypes[4].texture, NULL, &boxRect2);
+
+    SDL_QueryTexture(instructionTextures[10].texture, NULL, NULL, &instructionTextures[10].rect.w, &instructionTextures[10].rect.h);
+    instructionTextures[10].rect.x = instructionTextures[9].rect.x;
+    instructionTextures[10].rect.y = instructionTextures[9].rect.y+boxRect2.h+22;
+    SDL_RenderCopy(rend, instructionTextures[10].texture, NULL, &instructionTextures[10].rect);
+
+    //powrót
+    instructionTextures[11].rect.x = WINDOW_WIDTH/2-instructionTextures[11].rect.w/2-20;
+    instructionTextures[11].rect.y = WINDOW_HEIGHT-120;
+    SDL_RenderCopy(rend, instructionTextures[11].texture, NULL, &instructionTextures[11].rect);
 }
 
 void renderPause(){
@@ -1074,13 +1109,13 @@ void renderPause(){
 
     //NIE
     if(selectedOption==1)
-        SDL_RenderCopy(rend, pauseTextTextures[2].selected_texture, NULL, &pauseTextTextures[2].rect);
+        SDL_RenderCopy(rend, pauseTextTextures[2].second_texture, NULL, &pauseTextTextures[2].rect);
     else
     SDL_RenderCopy(rend, pauseTextTextures[2].texture, NULL, &pauseTextTextures[2].rect);
 
     //TAK
     if(selectedOption==2)
-        SDL_RenderCopy(rend, pauseTextTextures[1].selected_texture, NULL, &pauseTextTextures[1].rect);
+        SDL_RenderCopy(rend, pauseTextTextures[1].second_texture, NULL, &pauseTextTextures[1].rect);
     else
     SDL_RenderCopy(rend, pauseTextTextures[1].texture, NULL, &pauseTextTextures[1].rect);
 }
@@ -1126,7 +1161,7 @@ void renderRanking(){
                     menuTextTextures[3].rect.x = WINDOW_WIDTH/2-menuTextTextures[3].rect.w/2;
                     for(int i=0; i<4+RANKING_TOP; i++){
                         SDL_DestroyTexture(rankingTextTextures[i].texture);
-                        SDL_DestroyTexture(rankingTextTextures[i].selected_texture);
+                        SDL_DestroyTexture(rankingTextTextures[i].second_texture);
                     }
                     programStatus = 1;
                     selectedOption = 3;
@@ -1136,7 +1171,7 @@ void renderRanking(){
                     saveRanking();
                     for(int i=0; i<4+RANKING_TOP; i++){
                         SDL_DestroyTexture(rankingTextTextures[i].texture);
-                        SDL_DestroyTexture(rankingTextTextures[i].selected_texture);
+                        SDL_DestroyTexture(rankingTextTextures[i].second_texture);
                     }
                     createRankingTextures();
                     break;
@@ -1175,16 +1210,16 @@ void renderRanking(){
             rankingTextTextures[4+i].rect.y = rankingTextTextures[4+i-1].rect.y+55;
         }
         SDL_RenderCopy(rend, rankingTextTextures[4+i].texture, NULL, &rankingTextTextures[4+i].rect);
-        SDL_QueryTexture(rankingTextTextures[4+i].selected_texture, NULL, NULL, &temp.w, &temp.h);
+        SDL_QueryTexture(rankingTextTextures[4+i].second_texture, NULL, NULL, &temp.w, &temp.h);
         temp.y = rankingTextTextures[4+i].rect.y;
-        SDL_RenderCopy(rend, rankingTextTextures[4+i].selected_texture, NULL, &temp);
+        SDL_RenderCopy(rend, rankingTextTextures[4+i].second_texture, NULL, &temp);
     }
 
     //powrót
     rankingTextTextures[2].rect.x = 70;
     rankingTextTextures[2].rect.y = WINDOW_HEIGHT-150;
     if(selectedOption == 1)
-        SDL_RenderCopy(rend, rankingTextTextures[2].selected_texture, NULL, &rankingTextTextures[2].rect);
+        SDL_RenderCopy(rend, rankingTextTextures[2].second_texture, NULL, &rankingTextTextures[2].rect);
     else
         SDL_RenderCopy(rend, rankingTextTextures[2].texture, NULL, &rankingTextTextures[2].rect);
 
@@ -1192,7 +1227,7 @@ void renderRanking(){
     rankingTextTextures[3].rect.x = WINDOW_WIDTH-rankingTextTextures[3].rect.w-70;
     rankingTextTextures[3].rect.y = rankingTextTextures[2].rect.y;
     if(selectedOption == 2)
-        SDL_RenderCopy(rend, rankingTextTextures[3].selected_texture, NULL, &rankingTextTextures[3].rect);
+        SDL_RenderCopy(rend, rankingTextTextures[3].second_texture, NULL, &rankingTextTextures[3].rect);
     else
         SDL_RenderCopy(rend, rankingTextTextures[3].texture, NULL, &rankingTextTextures[3].rect);
 
@@ -1214,7 +1249,7 @@ void renderEnd(int mode){
                 case SDL_SCANCODE_RETURN:
                     for(int i=0; i<7; i++){
                         SDL_DestroyTexture(endTextTextures[i].texture);
-                        SDL_DestroyTexture(endTextTextures[i].selected_texture);
+                        SDL_DestroyTexture(endTextTextures[i].second_texture);
                     }
                     programStatus = 1;
                     selectedOption = 1;
@@ -1276,7 +1311,7 @@ void renderEnd(int mode){
                         createRankingTextures();
                         for(int i=0; i<7; i++){
                             SDL_DestroyTexture(endTextTextures[i].texture);
-                            SDL_DestroyTexture(endTextTextures[i].selected_texture);
+                            SDL_DestroyTexture(endTextTextures[i].second_texture);
                         }
                     }
                     break;

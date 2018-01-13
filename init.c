@@ -11,6 +11,7 @@ int unsigned last_time = 0;
 int program = 1;
 int programStatus = 1;
 int selectedOption = 1;
+int instructionTexturesCreated = 0;
 
 int deadTimer = DEAD_TIMER;
 int gameEnd = 0;

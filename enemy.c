@@ -32,6 +32,7 @@ void allEnemyInit(){
     enemyInit(5,    5,    1,        70,    0.7,   25,    5,     9,       300,  2,         2.0); // różowy
     enemyInit(6,    6,    1,        90,    0.7,   25,    6,     10,      300,  2,         2.3); // niebieski
     enemyInit(7,    90,   MAX_LIFE, 1000,  0.7,   0,     8,     1000,    70,   5,         0);   // boss
+    enemyInit(8,    10,   2,        100,   0,     0,     10,    1000,    200,  3,         1000);// pomocnik bossa
 }
 
 void addEnemy(int enemyType, float x, float y, float x_vel, float y_vel, int life){
@@ -53,7 +54,7 @@ void addEnemy(int enemyType, float x, float y, float x_vel, float y_vel, int lif
         enemies[i]->life = life;
         enemies[i]->cooldown = STARTING_COOLDOWN;
         enemies[i]->freeze = 0;
-        //printf("Created Enemy(%d)[%d;%d]\n",i,(int)enemies[i]->x,(int)enemies[i]->y);
+        printf("Created Enemy(%d)[%d;%d]\n",i,(int)enemies[i]->x,(int)enemies[i]->y);
     }
 }
 
@@ -111,9 +112,9 @@ void addEnemies(int stage){
                                              {0,0,0,6,5,6,0,0,0,0}
                                             },
                                             { //fala 8
-                                             {0,0,0,0,0,0,0,0,0,0},
                                              {0,0,0,0,7,0,0,0,0,0},
                                              {0,0,0,0,0,0,0,0,0,0},
+                                             {0,8,0,0,0,0,0,0,0,8},
                                              {0,0,0,0,0,0,0,0,0,0}
                                             }
                                            };
@@ -141,17 +142,7 @@ void enemyCollisionUpdate(){
         if(enemies[i]){
             int type = enemies[i]->enemyType;
 
-            if(type != 7){
-                enemies[i]->collisionBoxes[0].x = enemies[i]->x;
-                enemies[i]->collisionBoxes[0].y = enemies[i]->y;
-                enemies[i]->collisionBoxes[0].w = 60;
-                enemies[i]->collisionBoxes[0].h = 39;
-
-                enemies[i]->collisionBoxes[1].x = enemies[i]->x+21;
-                enemies[i]->collisionBoxes[1].y = enemies[i]->y+34;
-                enemies[i]->collisionBoxes[1].w = 19;
-                enemies[i]->collisionBoxes[1].h = 30;
-            }else{
+            if(type == 7){
                 enemies[i]->collisionBoxes[0].x = enemies[i]->x+2;
                 enemies[i]->collisionBoxes[0].y = enemies[i]->y;
                 enemies[i]->collisionBoxes[0].w = 163;
@@ -176,6 +167,31 @@ void enemyCollisionUpdate(){
                 enemies[i]->collisionBoxes[4].y = enemies[i]->y+105;
                 enemies[i]->collisionBoxes[4].w = 16;
                 enemies[i]->collisionBoxes[4].h = 21;
+            }else if(type == 8){
+                enemies[i]->collisionBoxes[0].x = enemies[i]->x+1;
+                enemies[i]->collisionBoxes[0].y = enemies[i]->y+3;
+                enemies[i]->collisionBoxes[0].w = 66;
+                enemies[i]->collisionBoxes[0].h = 25;
+
+                enemies[i]->collisionBoxes[1].x = enemies[i]->x+19;
+                enemies[i]->collisionBoxes[1].y = enemies[i]->y+27;
+                enemies[i]->collisionBoxes[1].w = 31;
+                enemies[i]->collisionBoxes[1].h = 26;
+
+                enemies[i]->collisionBoxes[2].x = enemies[i]->x+7;
+                enemies[i]->collisionBoxes[2].y = enemies[i]->y+34;
+                enemies[i]->collisionBoxes[2].w = 55;
+                enemies[i]->collisionBoxes[2].h = 9;
+            }else{
+                enemies[i]->collisionBoxes[0].x = enemies[i]->x;
+                enemies[i]->collisionBoxes[0].y = enemies[i]->y;
+                enemies[i]->collisionBoxes[0].w = 60;
+                enemies[i]->collisionBoxes[0].h = 39;
+
+                enemies[i]->collisionBoxes[1].x = enemies[i]->x+21;
+                enemies[i]->collisionBoxes[1].y = enemies[i]->y+34;
+                enemies[i]->collisionBoxes[1].w = 19;
+                enemies[i]->collisionBoxes[1].h = 30;
             }
         }
     }

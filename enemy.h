@@ -2,13 +2,13 @@
 #define ENEMIES_H_INCLUDED
 
 #define MAX_ENEMIES 70
-#define ENEMY_TYPES 7+1 //1 - template, nie używany
+#define ENEMY_TYPES 8+1 //1 - template, nie używany
 
 #define STARTING_COOLDOWN 30
 
 #define BOSS_BULLETS_COOLDOWN    4
-#define BOSS_RANDOM_BOX_COOLDOWN 10
-#define BOSS_BONUS_POINTS_TIME          60
+#define BOSS_RANDOM_BOX_COOLDOWN 7
+#define BOSS_BONUS_POINTS_TIME   60
 
 #include <SDL.h>
 #include "textures.h"

@@ -3,13 +3,13 @@
 
 #define SINUS_ACCURACY (0.1) //dokładność sinusoidy (im wyższa liczba tym większa częstotliwość drgań)
 #define MAX_BULLETS  500
-#define BULLET_TYPES 10
+#define BULLET_TYPES 11
 
 #include <SDL.h>
 #include "textures.h"
 
 typedef struct _Bullet{
-    float x, y, y_helper;
+    float x, y, x_vel, y_vel;
     float x_start, y_start;
     int bulletType;
     int bullet_amplitude, bullet_damage;

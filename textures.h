@@ -5,7 +5,7 @@
 #define HUD_HEIGHT 45
 #define MAX_ANIMATIONS 100
 #define ANIMATION_TYPES 5
-#define BG_SCROLLING_SPEED_INCREASE 5/LAST_STAGE
+#define BG_SCROLLING_SPEED_INCREASE 7/LAST_STAGE
 extern float bg_scrolling_speed;
 
 #include <SDL.h>
@@ -16,7 +16,7 @@ extern float bg_scrolling_speed;
 typedef struct _Texture{
     SDL_Rect rect;
     SDL_Texture* texture;
-    SDL_Texture* selected_texture;
+    SDL_Texture* second_texture;
 } Texture;
 
 typedef struct _Animation{
@@ -37,6 +37,7 @@ extern Animation *animations[MAX_ANIMATIONS];
 extern AnimationType animationTypes[ANIMATION_TYPES];
 extern Texture menuTextTextures[4];
 extern Texture pauseTextTextures[3];
+extern Texture instructionTextures[12];
 extern Texture rankingTextTextures[4+RANKING_TOP];
 extern Texture cooldownsTextTextures[BOX_TYPES];
 extern Texture endTextTextures[10];
@@ -67,13 +68,11 @@ extern SDL_Texture* bgTexture, *hudTexture, *heartTexture, *tempTexture, *scoreT
 extern SDL_Texture* playerTexture, *playerBulletTexture;
 extern SDL_Texture* animationTexture;
 extern SDL_Texture* textTexture;
-extern SDL_Texture* arrowsTexture, *qTexture, *wTexture, *eTexture;
 extern SDL_Texture* lifebarBackground, *lifebar, *lifebarPercent;
 
 extern SDL_Rect bgRect, hudRect1, hudRect2, heartRect, scoreTextRect;
 extern SDL_Rect playerRect, playerBulletRect, animationRect, frame;
-extern SDL_Rect boxRect, textRect;
-extern SDL_Rect arrowsRect, keyRect;
+extern SDL_Rect boxRect, boxRect2, textRect;
 extern SDL_Rect lifebarBackgroundRect, lifebarRect, lifebarPercentRect;
 
 void surfaceError();
@@ -81,6 +80,7 @@ SDL_Texture* createTexture(char *path);
 SDL_Texture* createTextTexture(TTF_Font* font, char *text, SDL_Color color, int outline, TTF_Font* outlineFont, SDL_Color outlineColor);
 
 void createTexturesAndRects();
+void createInstructionTextures();
 void createRankingTextures();
 void createEndTextures();
 

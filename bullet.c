@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "player.h"
 
 Bullet *bullets[MAX_BULLETS];
@@ -19,7 +20,18 @@ void addBullet(float x, float y, int type){
         bullets[found] = malloc(sizeof(Bullet));
         bullets[found]->x = x;
         bullets[found]->y = y;
-        bullets[found]->y_helper = 0;
+        if(type == 10){
+            float x_len = player.x+playerRect.w/2 - x-15;
+            float y_len = player.y+playerRect.h/2 - y-15;
+
+            float hyp = sqrt(x_len*x_len + y_len*y_len);
+
+            bullets[found]->x_vel = (x_len/hyp)*bulletTypes[type].bullet_speed;
+            bullets[found]->y_vel = (y_len/hyp)*bulletTypes[type].bullet_speed;
+        }else{
+            bullets[found]->x_vel = 0;
+            bullets[found]->y_vel = 0;
+        }
         bullets[found]->x_start = x;
         bullets[found]->y_start = y;
         bullets[found]->bulletType = type;
@@ -64,8 +76,9 @@ void allBulletsInit(){
     bulletInit(5,    5,    1.3,   1,   60,    -15,      1);
     bulletInit(6,    5,    1.4,   1,   220,   8,        1);
     bulletInit(7,    0,    -3.5,  3,   0,     0,        3);
-    bulletInit(8,   15,    6,     1,   0,     0,        1);
-    bulletInit(9,    5,    4,     1,   0,     0,        1);
+    bulletInit(8,   15,    5,     1,   0,     0,        1);
+    bulletInit(9,    5,    3,     1,   0,     0,        1);
+    bulletInit(10,   0,    2,     1,   0,     5,        1);
 }
 
 void bulletCollisionUpdate(){

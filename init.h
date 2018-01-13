@@ -9,7 +9,7 @@
 #define FIRST_STAGE 1-1
 #define LAST_STAGE  8
 
-#define DEAD_TIMER 150
+#define DEAD_TIMER 120
 
 #include <SDL.h>
 
@@ -17,6 +17,7 @@ extern int unsigned frames_counter, current_time, last_time;
 extern int program;
 extern int programStatus;
 extern int selectedOption;
+extern int instructionTexturesCreated;
 
 extern int deadTimer;
 extern int gameEnd;
