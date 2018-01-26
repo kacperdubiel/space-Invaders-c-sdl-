@@ -3,7 +3,7 @@
 
 #define RANKING_FILE "ranking.txt"
 #define RANKING_TOP 5
-#define RANKING_NAME_CHARS 11 //1 na koniec stringa
+#define RANKING_NAME_CHARS 11 //+1 na zakończenie stringa
 #define FORBIDDEN_SYMBOLS 20
 
 typedef struct _Ranking{

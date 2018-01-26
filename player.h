@@ -15,7 +15,7 @@
 
 typedef struct _Player{
     char name[RANKING_NAME_CHARS];
-    float x, y, x_vel, y_vel;
+    float x, y;
     int life;
     int right, left, up, down, fire, score, stage;
     int attack_speed, attCooldown, speed, bullet_amplitude, damage;
