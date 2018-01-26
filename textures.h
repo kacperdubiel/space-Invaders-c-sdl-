@@ -65,9 +65,7 @@ extern SDL_Color colorWhite;
 extern SDL_Color colorGold;
 
 extern SDL_Texture* bgTexture, *hudTexture, *heartTexture, *tempTexture, *scoreTextTexture;
-extern SDL_Texture* playerTexture, *playerBulletTexture;
-extern SDL_Texture* animationTexture;
-extern SDL_Texture* textTexture;
+extern SDL_Texture* playerTexture;
 extern SDL_Texture* lifebarBackground, *lifebar, *lifebarPercent;
 
 extern SDL_Rect bgRect, hudRect1, hudRect2, heartRect, scoreTextRect;

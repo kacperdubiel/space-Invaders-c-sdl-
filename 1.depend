@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1515863208 source:c:\users\kacpe\desktop\c\sdl\1\main.c
+1516625122 source:c:\users\kacpe\desktop\c\sdl\1\main.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -355,7 +355,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1515857657 c:\users\kacpe\desktop\c\sdl\1\init.h
+1516905503 c:\users\kacpe\desktop\c\sdl\1\init.h
 	<SDL.h>
 
 1515857657 source:c:\users\kacpe\desktop\c\sdl\1\init.c
@@ -365,13 +365,13 @@
 	<SDL_ttf.h>
 	"enemy.h"
 
-1515863405 c:\users\kacpe\desktop\c\sdl\1\textures.h
+1515865678 c:\users\kacpe\desktop\c\sdl\1\textures.h
 	<SDL.h>
 	<SDL_ttf.h>
 	"ranking.h"
 	"boxes.h"
 
-1515863177 source:c:\users\kacpe\desktop\c\sdl\1\textures.c
+1515865678 source:c:\users\kacpe\desktop\c\sdl\1\textures.c
 	"textures.h"
 	<stdio.h>
 	<stdlib.h>

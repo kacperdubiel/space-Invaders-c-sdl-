@@ -6,7 +6,7 @@
 #define WINDOW_HEIGHT (720)
 #define FPS           (50)
 
-#define FIRST_STAGE 1-1
+#define FIRST_STAGE 0
 #define LAST_STAGE  8
 
 #define DEAD_TIMER 120

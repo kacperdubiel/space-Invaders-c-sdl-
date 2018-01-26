@@ -33,9 +33,7 @@ SDL_Color colorWhite = {255, 255, 255};
 SDL_Color colorGold  = {255, 222, 0};
 
 SDL_Texture* bgTexture, *hudTexture, *heartTexture, *tempTexture, *scoreTextTexture;
-SDL_Texture* playerTexture, *playerBulletTexture;
-SDL_Texture* animationTexture;
-SDL_Texture* textTexture;
+SDL_Texture* playerTexture;
 SDL_Texture* lifebarBackground, *lifebar, *lifebarPercent;
 
 SDL_Rect bgRect, hudRect1, hudRect2, heartRect, scoreTextRect;

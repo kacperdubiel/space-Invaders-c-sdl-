@@ -94,18 +94,29 @@ void onExit(){
         SDL_DestroyTexture(enemyTypes[i].texture);
     for(int i=0;i<BULLET_TYPES;i++)
         SDL_DestroyTexture(bulletTypes[i].texture);
+    for(int i=0;i<ANIMATION_TYPES;i++)
+        SDL_DestroyTexture(animationTypes[i].texture);
+    for(int i=0;i<BOX_TYPES;i++)
+        SDL_DestroyTexture(boxTypes[i].texture);
+    for(int i=0;i<BULLET_TYPES;i++)
+        SDL_DestroyTexture(bulletTypes[i].texture);
+
+
+    for(int i=0;i<4;i++){
+        SDL_DestroyTexture(menuTextTextures[i].texture);        SDL_DestroyTexture(menuTextTextures[i].second_texture);
+    }
+    for(int i=0;i<3;i++){
+        SDL_DestroyTexture(pauseTextTextures[i].texture);        SDL_DestroyTexture(pauseTextTextures[i].second_texture);
+    }
+    for(int i=0;i<12;i++){
+        SDL_DestroyTexture(instructionTextures[i].texture);        SDL_DestroyTexture(instructionTextures[i].second_texture);
+    }
+
     SDL_DestroyTexture(scoreTextTexture);
-    SDL_DestroyTexture(menuTextTextures[0].texture);
-    SDL_DestroyTexture(menuTextTextures[1].texture);
-    SDL_DestroyTexture(menuTextTextures[3].texture);
-    SDL_DestroyTexture(pauseTextTextures[0].texture);
-    SDL_DestroyTexture(pauseTextTextures[1].texture);
-    SDL_DestroyTexture(pauseTextTextures[2].texture);
-    SDL_DestroyTexture(animationTexture);
-    SDL_DestroyTexture(iconTextures[1].second_texture);
     SDL_DestroyTexture(bgTexture);
     SDL_DestroyTexture(hudTexture);
     SDL_DestroyTexture(heartTexture);
+    SDL_DestroyTexture(tempTexture);
     SDL_DestroyTexture(playerTexture);
     SDL_DestroyRenderer(rend);
     SDL_DestroyWindow(win);
